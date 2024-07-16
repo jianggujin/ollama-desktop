@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.jianggujin.com/xml/vulcan"
+            xmlns="http://www.jianggujin.com/xml/vulcan"
+            elementFormDefault="qualified">
+
+    <xsd:simpleType name="stringExp" id="stringExp">
+        <xsd:restriction base="xsd:string">
+            <xsd:minLength value="1"/>
+            <xsd:maxLength value="50"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:simpleType name="dataType">
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="VARCHAR"/>
+            <xsd:enumeration value="CHAR"/>
+            <xsd:enumeration value="TEXT"/>
+            <xsd:enumeration value="CLOB"/>
+            <xsd:enumeration value="BOOLEAN"/>
+            <xsd:enumeration value="TINYINT"/>
+            <xsd:enumeration value="SMALLINT"/>
+            <xsd:enumeration value="INT"/>
+            <xsd:enumeration value="BIGINT"/>
+            <xsd:enumeration value="DECIMAL"/>
+            <xsd:enumeration value="DATE"/>
+            <xsd:enumeration value="TIME"/>
+            <xsd:enumeration value="TIMESTAMP"/>
+            <xsd:enumeration value="BLOB"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+    <xsd:simpleType name="boolean">
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="true"/>
+            <xsd:enumeration value="false"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:element name="vulcan">
+        <xsd:complexType>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element ref="createTable"/>
+                <xsd:element ref="createIndex"/>
+                <xsd:element ref="createPrimaryKey"/>
+                <xsd:element ref="dropTable"/>
+                <xsd:element ref="dropIndex"/>
+                <xsd:element ref="addColumn"/>
+                <xsd:element ref="alterColumn"/>
+                <xsd:element ref="dropColumn"/>
+                <xsd:element ref="dropPrimaryKey"/>
+                <xsd:element ref="renameTable"/>
+                <xsd:element ref="alterTableRemarks"/>
+                <xsd:element ref="script"/>
+            </xsd:choice>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="createTable">
+        <xsd:complexType>
+            <xsd:sequence maxOccurs="unbounded">
+                <xsd:element ref="column"/>
+            </xsd:sequence>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="remarks" type="xsd:string"/>
+        </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="column">
+        <xsd:complexType>
+            <xsd:sequence minOccurs="0" maxOccurs="unbounded">
+                <xsd:element ref="columnDialect"/>
+            </xsd:sequence>
+            <xsd:attribute name="columnName" type="stringExp" use="required"/>
+            <xsd:attribute name="dataType" type="dataType" use="required"/>
+            <xsd:attribute name="maxLength" type="xsd:int"/>
+            <xsd:attribute name="numericScale" type="xsd:int"/>
+            <xsd:attribute name="nullable" type="boolean" default="true"/>
+            <xsd:attribute name="unique" type="boolean" default="false"/>
+            <xsd:attribute name="primaryKey" type="boolean" default="false"/>
+            <xsd:attribute name="defaultValue" type="xsd:string"/>
+            <xsd:attribute name="defaultOriginValue" type="xsd:string"/>
+            <xsd:attribute name="remarks" type="xsd:string"/>
+        </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="columnDialect">
+        <xsd:complexType>
+            <xsd:attribute name="dialect" type="stringExp" use="required"/>
+            <xsd:attribute name="dataType" type="dataType" use="required"/>
+            <xsd:attribute name="defaultValue" type="xsd:string"/>
+            <xsd:attribute name="defaultOriginValue" type="xsd:string"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="createIndex">
+        <xsd:complexType>
+            <xsd:sequence maxOccurs="unbounded">
+                <xsd:element ref="indexColumn"/>
+            </xsd:sequence>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="indexName" type="stringExp" use="required"/>
+            <xsd:attribute name="unique" type="boolean" default="false"/>
+        </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="indexColumn">
+        <xsd:complexType>
+            <xsd:attribute name="columnName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="createPrimaryKey">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element ref="indexColumn"/>
+            </xsd:sequence>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="keyName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="dropTable">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="dropIndex">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="indexName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="addColumn">
+        <xsd:complexType>
+            <xsd:sequence maxOccurs="unbounded">
+                <xsd:element ref="column"/>
+            </xsd:sequence>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="alterColumn">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element ref="column"/>
+            </xsd:sequence>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="columnName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="dropColumn">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="columnName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="dropPrimaryKey">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="renameTable">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="newTableName" type="stringExp" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="alterTableRemarks">
+        <xsd:complexType>
+            <xsd:attribute name="tableName" type="stringExp" use="required"/>
+            <xsd:attribute name="remarks" type="xsd:string"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="script">
+        <xsd:complexType>
+            <xsd:simpleContent>
+                <xsd:extension base="xsd:string">
+                    <xsd:attribute name="dialect" type="xsd:string"/>
+                </xsd:extension>
+            </xsd:simpleContent>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

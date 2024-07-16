@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<vulcan xmlns="http://www.jianggujin.com/xml/vulcan"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.jianggujin.com/xml/vulcan
+                   ../../vulcan/vulcan.xsd">
+    <createTable tableName="t_config" remarks="配置信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="config_key" dataType="VARCHAR" maxLength="100" nullable="false" unique="true"
+                remarks="配置键"/>
+        <column columnName="config_value" dataType="TEXT" remarks="配置值"/>
+        <column columnName="config_comment" dataType="VARCHAR" maxLength="500" remarks="配置说明"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_common_config_type" remarks="公共配置类型信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="config_type" dataType="VARCHAR" maxLength="50" nullable="false" unique="true"
+                remarks="配置类型"/>
+        <column columnName="type_name" dataType="VARCHAR" maxLength="100" nullable="false" unique="true"
+                remarks="类型名称"/>
+        <column columnName="type_comment" dataType="VARCHAR" maxLength="500" remarks="类型说明"/>
+        <column columnName="is_module" dataType="TINYINT" defaultOriginValue="0" remarks="是否组件配置"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_common_config_item" remarks="公共配置项信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="config_type" dataType="VARCHAR" maxLength="50" nullable="false" remarks="配置类型"/>
+        <column columnName="item_key" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置项键"/>
+        <column columnName="item_default_value" dataType="TEXT" remarks="配置项默认值"/>
+        <column columnName="item_comment" dataType="VARCHAR" maxLength="5000" remarks="配置项说明"/>
+        <column columnName="is_high_grade" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否高级配置"/>
+        <column columnName="is_pwd" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否密码"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_common_config_item" indexName="udx_type_key" unique="true">
+        <indexColumn columnName="config_type"/>
+        <indexColumn columnName="item_key"/>
+    </createIndex>
+    <createTable tableName="t_license" remarks="授权信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="serial_number" dataType="VARCHAR" maxLength="50" nullable="false" unique="true"
+                remarks="序列号"/>
+        <column columnName="license_name" dataType="VARCHAR" maxLength="300" remarks="授权名称"/>
+        <column columnName="custom_name" dataType="VARCHAR" maxLength="100" remarks="自定义名称"/>
+        <column columnName="is_main" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否主授权信息"/>
+        <column columnName="license_content" dataType="TEXT" remarks="授权内容"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_environment" remarks="环境信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="license_id" dataType="BIGINT" nullable="false" remarks="授权编号"/>
+        <column columnName="environment_name" dataType="VARCHAR" maxLength="100" nullable="false" remarks="环境名称"/>
+        <column columnName="environment_comment" dataType="VARCHAR" maxLength="500" remarks="环境说明"/>
+        <column columnName="is_main" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否主环境"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_environment" indexName="udx_license_name">
+        <indexColumn columnName="license_id"/>
+        <indexColumn columnName="environment_name"/>
+    </createIndex>
+    <createTable tableName="t_common_config_group" remarks="公共配置项分组信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="module_instance_id" dataType="BIGINT" nullable="false" defaultOriginValue="0"
+                remarks="关联组件编号"/>
+        <column columnName="config_type" dataType="VARCHAR" maxLength="50" nullable="false" remarks="配置类型"/>
+        <column columnName="config_name" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置名称"/>
+        <column columnName="config_comment" dataType="VARCHAR" maxLength="500" remarks="配置说明"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_common_config_group" indexName="udx_type_name" unique="true">
+        <indexColumn columnName="config_type"/>
+        <indexColumn columnName="config_name"/>
+    </createIndex>
+    <createTable tableName="t_common_config_detail" remarks="用户公共配置详情信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="config_group_id" dataType="BIGINT" nullable="false" remarks="公共配置分组编号"/>
+        <column columnName="config_item_key" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置项键"/>
+        <column columnName="config_item_value" dataType="TEXT" remarks="配置项值"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_common_config_detail" indexName="udx_group_key">
+        <indexColumn columnName="config_group_id"/>
+        <indexColumn columnName="config_item_key"/>
+    </createIndex>
+    <createTable tableName="t_host" remarks="主机信息">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="host_name" dataType="VARCHAR" maxLength="100" nullable="false" remarks="主机名称"/>
+        <column columnName="host_comment" dataType="VARCHAR" maxLength="500" remarks="主机说明"/>
+        <column columnName="ip_address" dataType="VARCHAR" maxLength="100" nullable="false" unique="true"
+                remarks="主机IP"/>
+        <column columnName="ssh_username" dataType="VARCHAR" maxLength="500" nullable="false" remarks="用户名"/>
+        <column columnName="ssh_password" dataType="VARCHAR" maxLength="500" nullable="false" remarks="密码"/>
+        <column columnName="ssh_port" dataType="INT" defaultOriginValue="22" nullable="false" remarks="端口号"/>
+        <column columnName="os_name" dataType="VARCHAR" maxLength="50" remarks="操作系统"/>
+        <column columnName="arch_name" dataType="VARCHAR" maxLength="50" defaultValue="x86_64" remarks="系统架构"/>
+        <column columnName="system_name" dataType="VARCHAR" maxLength="100" remarks="系统名称"/>
+        <column columnName="system_version" dataType="VARCHAR" maxLength="100" remarks="系统版本"/>
+        <column columnName="system_release" dataType="TEXT" remarks="系统发行信息"/>
+        <column columnName="host_info" dataType="TEXT" remarks="主机信息"/>
+        <column columnName="memory_total" dataType="BIGINT" defaultOriginValue="0" remarks="内存总大小"/>
+        <column columnName="memory_available" dataType="BIGINT" defaultOriginValue="0" remarks="可用内存大小"/>
+        <column columnName="disk_total" dataType="BIGINT" defaultOriginValue="0" remarks="磁盘总大小"/>
+        <column columnName="disk_available" dataType="BIGINT" defaultOriginValue="0" remarks="可用磁盘大小"/>
+        <column columnName="cpu_info" dataType="TEXT" remarks="CPU信息"/>
+        <column columnName="last_heat_beat" dataType="TIMESTAMP" remarks="最后一次心跳上报时间"/>
+        <column columnName="heat_beat_mode" dataType="INT" defaultOriginValue="0" remarks="心跳上报模式 0 拉取 1 推送"/>
+        <column columnName="installed_docker" dataType="TINYINT" defaultOriginValue="0" nullable="false"
+                remarks="是否安装Docker"/>
+        <column columnName="docker_version" dataType="VARCHAR" maxLength="100" remarks="Docker版本号"/>
+        <column columnName="installed_docker_compose" dataType="TINYINT" defaultOriginValue="0" nullable="false"
+                remarks="是否安装DockerCompose"/>
+        <column columnName="docker_compose_version" dataType="VARCHAR" maxLength="100" remarks="DockerCompose版本号"/>
+        <column columnName="kernel_tuned" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否内核调优"/>
+        <column columnName="installed_agent" dataType="TINYINT" defaultOriginValue="0" nullable="false"
+                remarks="是否安装Agent"/>
+        <column columnName="agent_version" dataType="VARCHAR" maxLength="100" remarks="Agent版本号"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_host" indexName="udx_environment_name">
+        <indexColumn columnName="environment_id"/>
+        <indexColumn columnName="host_name"/>
+    </createIndex>
+    <createTable tableName="t_user" remarks="用户信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="user_name" dataType="VARCHAR" maxLength="100" nullable="false" unique="true" remarks="用户名"/>
+        <column columnName="nick_name" dataType="VARCHAR" maxLength="100" remarks="昵称"/>
+        <column columnName="user_comment" dataType="VARCHAR" maxLength="500" remarks="用户说明"/>
+        <column columnName="is_super" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否超级管理员"/>
+        <column columnName="is_admin" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否管理员"/>
+        <column columnName="is_first" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否首次登录"/>
+        <column columnName="is_locked" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否锁定用户"/>
+        <column columnName="login_password" dataType="VARCHAR" maxLength="100" nullable="false" remarks="登录密码"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_login_log" remarks="登录日志">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="trace_id" dataType="BIGINT" nullable="false" remarks="跟踪编号"/>
+        <column columnName="user_id" dataType="BIGINT" nullable="false" remarks="用户编号"/>
+        <column columnName="client_ip" dataType="VARCHAR" maxLength="100" remarks="客户端IP"/>
+        <column columnName="user_agent" dataType="VARCHAR" maxLength="500" remarks="浏览器User-Agent"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_operate_log" remarks="操作日志">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="trace_id" dataType="BIGINT" remarks="跟踪编号"/>
+        <column columnName="user_id" dataType="BIGINT" nullable="false" remarks="用户编号"/>
+        <column columnName="client_ip" dataType="VARCHAR" maxLength="100" remarks="客户端IP"/>
+        <column columnName="request_method" dataType="VARCHAR" maxLength="30" nullable="false" remarks="请求方法"/>
+        <column columnName="request_url" dataType="VARCHAR" maxLength="500" nullable="false" remarks="请求地址"/>
+        <column columnName="operate_tag" dataType="VARCHAR" maxLength="100" nullable="false" remarks="操作标签"/>
+        <column columnName="is_success" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否成功"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_operate_log_body" remarks="操作日志详情信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="request_data" dataType="TEXT" remarks="请求信息"/>
+        <column columnName="response_data" dataType="TEXT" remarks="响应信息"/>
+        <column columnName="exception_data" dataType="TEXT" remarks="异常信息"/>
+    </createTable>
+    <createTable tableName="t_product" remarks="产品信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="product_id" dataType="VARCHAR" maxLength="100" nullable="false" unique="true"
+                remarks="产品ID"/>
+        <column columnName="product_name" dataType="VARCHAR" maxLength="500" remarks="产品名称"/>
+        <column columnName="product_desc" dataType="TEXT" remarks="产品说明"/>
+        <column columnName="last_version" dataType="VARCHAR" maxLength="100" remarks="最新版本"/>
+        <column columnName="last_publish_time" dataType="VARCHAR" maxLength="100" remarks="最新版本发布时间"/>
+        <column columnName="last_version_tag" dataType="TEXT" remarks="最新版本更新说明"/>
+        <column columnName="product_type" dataType="TINYINT" defaultOriginValue="0" remarks="产品类型 0:业务包 1:组件包"/>
+        <column columnName="product_define" dataType="VARCHAR" maxLength="100" remarks="产品包的定义"/>
+        <column columnName="product_group" dataType="VARCHAR" maxLength="100" remarks="产品分组代码"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_product_detail" remarks="产品详情信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="product_id" dataType="VARCHAR" maxLength="100" nullable="false" remarks="产品ID"/>
+        <column columnName="product_name" dataType="VARCHAR" maxLength="500" remarks="产品名称"/>
+        <column columnName="product_version" dataType="VARCHAR" maxLength="100" remarks="产品版本号"/>
+        <column columnName="product_arch" dataType="VARCHAR" maxLength="10" remarks="产品架构"/>
+        <column columnName="product_desc" dataType="TEXT" remarks="产品说明"/>
+        <column columnName="publish_time" dataType="VARCHAR" maxLength="100" remarks="发布时间"/>
+        <column columnName="product_path" dataType="VARCHAR" maxLength="500" remarks="产品包目录"/>
+        <column columnName="product_size" dataType="BIGINT" defaultOriginValue="0" nullable="false"
+                remarks="产品包大小"/>
+        <column columnName="product_type" dataType="TINYINT" defaultOriginValue="0" remarks="产品类型 0:业务包 1:组件包"/>
+        <column columnName="product_define" dataType="VARCHAR" maxLength="100" remarks="产品包的定义"/>
+        <column columnName="version_tag" dataType="TEXT" remarks="版本更新说明"/>
+        <column columnName="module_type" dataType="VARCHAR" maxLength="100" remarks="组件包类型，对应公共配置中的configType"/>
+        <column columnName="deploy_school_version" dataType="VARCHAR" maxLength="100" remarks="实施作业平台依赖版本"/>
+        <column columnName="product_config_path" dataType="VARCHAR" maxLength="500" remarks="产品配置文件路径"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createIndex tableName="t_product_detail" indexName="udx_product_detail_version">
+        <indexColumn columnName="product_id"/>
+        <indexColumn columnName="product_version"/>
+        <indexColumn columnName="publish_time"/>
+    </createIndex>
+    <createTable tableName="t_product_group" remarks="产品分组信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="product_group" dataType="VARCHAR" maxLength="100" unique="true" remarks="产品分组代码"/>
+        <column columnName="product_group_name" dataType="VARCHAR" maxLength="500" remarks="产品分组名称"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_deploy_product" remarks="安装产品信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="product_id" dataType="BIGINT" nullable="false" remarks="产品编号"/>
+        <column columnName="product_detail_id" dataType="BIGINT" nullable="false" remarks="产品详情编号"/>
+        <column columnName="product_name" dataType="VARCHAR" maxLength="500" remarks="产品名称"/>
+        <column columnName="product_version" dataType="VARCHAR" maxLength="100" remarks="产品版本号"/>
+        <column columnName="deploy_schema" dataType="VARCHAR" maxLength="100" remarks="部署模式"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_deploy_module" remarks="安装模块信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="deploy_product_id" dataType="BIGINT" nullable="false" remarks="部署产品编号"/>
+        <column columnName="module_name" dataType="VARCHAR" maxLength="100" nullable="false" remarks="模块名称"/>
+        <column columnName="module_version" dataType="VARCHAR" maxLength="100" nullable="false" remarks="模块版本"/>
+        <column columnName="instance_num" dataType="INT" defaultOriginValue="0" nullable="false" remarks="实例数"/>
+        <column columnName="module_memory" dataType="BIGINT" defaultOriginValue="0" nullable="false"
+                remarks="模块所需节点内存"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_module_config" remarks="模块配置信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="deploy_product_id" dataType="BIGINT" nullable="false" remarks="部署产品编号"/>
+        <column columnName="deploy_module_id" dataType="BIGINT" nullable="false" remarks="部署模块编号"/>
+        <column columnName="config_key" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置键"/>
+        <column columnName="config_value" dataType="TEXT" remarks="配置值"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_module_common_config" remarks="部署模块公共配置关联信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="deploy_module_id" dataType="BIGINT" nullable="false" remarks="部署模块编号"/>
+        <column columnName="config_group_id" dataType="BIGINT" nullable="false" remarks="公共配置编号"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_module_instance" remarks="部署模块实例信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="deploy_module_id" dataType="BIGINT" nullable="false" remarks="部署模块编号"/>
+        <column columnName="host_id" dataType="BIGINT" nullable="false" remarks="主机编号"/>
+        <column columnName="instance_name" dataType="VARCHAR" maxLength="100" nullable="false"
+                remarks="部署实例名称，模块名称:主机IP"/>
+        <column columnName="instance_status" dataType="TINYINT" nullable="false"
+                remarks="实例状态 0 未部署 1 正常 2 停止 3 部署中 4 部署失败"/>
+        <column columnName="module_memory" dataType="BIGINT" defaultOriginValue="0" nullable="false"
+                remarks="模块所需节点内存"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+    <createTable tableName="t_module_deploy_log" remarks="模块部署日志">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="environment_id" dataType="BIGINT" nullable="false" remarks="环境编号"/>
+        <column columnName="deploy_module_id" dataType="BIGINT" nullable="false" remarks="部署模块编号"/>
+        <column columnName="module_instance_id" dataType="BIGINT" nullable="false" remarks="模块实例编号"/>
+        <column columnName="deploy_log" dataType="TEXT" remarks="部署日志"/>
+        <column columnName="is_delete" dataType="TINYINT" nullable="false" defaultOriginValue="0" remarks="是否删除"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+</vulcan>

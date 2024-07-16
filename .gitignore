@@ -1,0 +1,7 @@
+build/bin
+node_modules
+frontend/dist
+.idea
+bin
+.DS_Store
+*.log

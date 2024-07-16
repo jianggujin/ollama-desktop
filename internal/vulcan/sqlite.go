@@ -1,6 +1,7 @@
 package vulcan
 
 import (
+	"context"
 	"fmt"
 	"github.com/hashicorp/go-version"
 	"sort"
@@ -43,11 +44,11 @@ func (m *SqliteMigrator) Name() string {
 }
 
 // 初始化变更记录表
-func (m *SqliteMigrator) initChangeLogTable() error {
+func (m *SqliteMigrator) initChangeLogTable(ctx context.Context) error {
 	if m.inited {
 		return nil
 	}
-	rows, err := m.driver.Query("SELECT name FROM sqlite_master WHERE type = 'table'")
+	rows, err := m.driver.Query(ctx, "SELECT name FROM sqlite_master WHERE type = 'table'")
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func (m *SqliteMigrator) initChangeLogTable() error {
 			return nil
 		}
 	}
-	err = m.driver.Execute("CREATE TABLE " + m.changeTableName + "(id INTEGER PRIMARY KEY AUTOINCREMENT, change_version VARCHAR(255) NOT NULL, is_success TINYINT DEFAULT 0 NOT NULL, created_at DATETIME, updated_at DATETIME)")
+	err = m.driver.Execute(ctx, "CREATE TABLE "+m.changeTableName+"(id INTEGER PRIMARY KEY AUTOINCREMENT, change_version VARCHAR(255) NOT NULL, is_success TINYINT DEFAULT 0 NOT NULL, created_at DATETIME, updated_at DATETIME)")
 	if err != nil {
 		return err
 	}
@@ -70,11 +71,11 @@ func (m *SqliteMigrator) initChangeLogTable() error {
 	return nil
 }
 
-func (m *SqliteMigrator) LastVersion() (*version.Version, error) {
-	if err := m.initChangeLogTable(); err != nil {
+func (m *SqliteMigrator) LastVersion(ctx context.Context) (*version.Version, error) {
+	if err := m.initChangeLogTable(ctx); err != nil {
 		return nil, err
 	}
-	rows, err := m.driver.Query("SELECT change_version FROM " + m.changeTableName + " WHERE is_success = 1")
+	rows, err := m.driver.Query(ctx, "SELECT change_version FROM "+m.changeTableName+" WHERE is_success = 1")
 	if err != nil {
 		return nil, err
 	}
@@ -98,49 +99,49 @@ func (m *SqliteMigrator) LastVersion() (*version.Version, error) {
 	return versions[len(versions)-1], nil
 }
 
-func (m *SqliteMigrator) Migrate(nodes []Node, version *version.Version) error {
-	if err := m.initChangeLogTable(); err != nil {
+func (m *SqliteMigrator) Migrate(ctx context.Context, nodes []Node, version *version.Version) error {
+	if err := m.initChangeLogTable(ctx); err != nil {
 		return err
 	}
-	err := m.driver.Execute("INSERT INTO "+m.changeTableName+"(change_version, is_success, created_at, updated_at) VALUES(?, 0, ?, ?)", version.Original(), time.Now(), time.Now())
+	err := m.driver.Execute(ctx, "INSERT INTO "+m.changeTableName+"(change_version, is_success, created_at, updated_at) VALUES(?, 0, ?, ?)", version.Original(), time.Now(), time.Now())
 	if err != nil {
 		return err
 	}
 	for _, node := range nodes {
 		switch n := node.(type) {
 		case *CreateTableNode:
-			err = m.createTable(n)
+			err = m.createTable(ctx, n)
 		case *CreateIndexNode:
-			err = m.createIndex(n)
+			err = m.createIndex(ctx, n)
 		case *CreatePrimaryKeyNode:
-			err = m.createPrimaryKey(n)
+			err = m.createPrimaryKey(ctx, n)
 		case *DropTableNode:
-			err = m.dropTable(n)
+			err = m.dropTable(ctx, n)
 		case *DropIndexNode:
-			err = m.dropIndex(n)
+			err = m.dropIndex(ctx, n)
 		case *AddColumnNode:
-			err = m.addColumn(n)
+			err = m.addColumn(ctx, n)
 		case *AlterColumnNode:
-			err = m.alterColumn(n)
+			err = m.alterColumn(ctx, n)
 		case *DropColumnNode:
-			err = m.dropColumn(n)
+			err = m.dropColumn(ctx, n)
 		case *DropPrimaryKeyNode:
-			err = m.dropPrimaryKey(n)
+			err = m.dropPrimaryKey(ctx, n)
 		case *RenameTableNode:
-			err = m.renameTable(n)
+			err = m.renameTable(ctx, n)
 		case *AlterTableRemarksNode:
-			err = m.alterTableRemarks(n)
+			err = m.alterTableRemarks(ctx, n)
 		case *ScriptNode:
-			err = m.script(n)
+			err = m.script(ctx, n)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	return m.driver.Execute("UPDATE "+m.changeTableName+" SET is_success = 1, updated_at = ? WHERE change_version = ? AND is_success = 0", time.Now(), version.Original())
+	return m.driver.Execute(ctx, "UPDATE "+m.changeTableName+" SET is_success = 1, updated_at = ? WHERE change_version = ? AND is_success = 0", time.Now(), version.Original())
 }
 
-func (m *SqliteMigrator) createTable(node *CreateTableNode) error {
+func (m *SqliteMigrator) createTable(ctx context.Context, node *CreateTableNode) error {
 	var builder strings.Builder
 	builder.WriteString("CREATE TABLE ")
 	builder.WriteString(node.TableName)
@@ -154,7 +155,7 @@ func (m *SqliteMigrator) createTable(node *CreateTableNode) error {
 		}
 	}
 	builder.WriteString("\n)")
-	return m.driver.Execute(builder.String())
+	return m.driver.Execute(ctx, builder.String())
 }
 
 func (m *SqliteMigrator) createTableColumn(node *ColumnNode, builder *strings.Builder) {
@@ -200,7 +201,7 @@ func (m *SqliteMigrator) createTableColumn(node *ColumnNode, builder *strings.Bu
 	}
 }
 
-func (m *SqliteMigrator) createIndex(node *CreateIndexNode) error {
+func (m *SqliteMigrator) createIndex(ctx context.Context, node *CreateIndexNode) error {
 	var builder strings.Builder
 	builder.WriteString("CREATE")
 	if node.Unique {
@@ -217,12 +218,12 @@ func (m *SqliteMigrator) createIndex(node *CreateIndexNode) error {
 	}
 	builder.WriteString(strings.Join(columns, ", "))
 	builder.WriteString(")")
-	return m.driver.Execute(builder.String())
+	return m.driver.Execute(ctx, builder.String())
 }
 
-func (m *SqliteMigrator) createPrimaryKey(node *CreatePrimaryKeyNode) error {
+func (m *SqliteMigrator) createPrimaryKey(ctx context.Context, node *CreatePrimaryKeyNode) error {
 	// 查询表结构
-	info, err := m.tableStruct(node.TableName)
+	info, err := m.tableStruct(ctx, node.TableName)
 	if err != nil {
 		return err
 	}
@@ -257,25 +258,25 @@ func (m *SqliteMigrator) createPrimaryKey(node *CreatePrimaryKeyNode) error {
 		}
 	}
 	builder.WriteString("\n)")
-	return m.copyTable(builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
+	return m.copyTable(ctx, builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
 }
 
-func (m *SqliteMigrator) copyTable(createSql string, columnNames []string, tmpTableName, tableName string, indexSqls []string) error {
-	if err := m.driver.Execute(createSql); err != nil {
+func (m *SqliteMigrator) copyTable(ctx context.Context, createSql string, columnNames []string, tmpTableName, tableName string, indexSqls []string) error {
+	if err := m.driver.Execute(ctx, createSql); err != nil {
 		return nil
 	}
 	columnNameStr := strings.Join(columnNames, ", ")
-	if err := m.driver.Execute(fmt.Sprintf("INSERT INTO %s(%s) SELECT %s FROM %s", tmpTableName, columnNameStr, columnNameStr, tableName)); err != nil {
+	if err := m.driver.Execute(ctx, fmt.Sprintf("INSERT INTO %s(%s) SELECT %s FROM %s", tmpTableName, columnNameStr, columnNameStr, tableName)); err != nil {
 		return nil
 	}
-	if err := m.driver.Execute(fmt.Sprintf("DROP TABLE %s", tableName)); err != nil {
+	if err := m.driver.Execute(ctx, fmt.Sprintf("DROP TABLE %s", tableName)); err != nil {
 		return nil
 	}
-	if err := m.driver.Execute(fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tmpTableName, tableName)); err != nil {
+	if err := m.driver.Execute(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tmpTableName, tableName)); err != nil {
 		return nil
 	}
 	for _, insexSql := range indexSqls {
-		if err := m.driver.Execute(insexSql); err != nil {
+		if err := m.driver.Execute(ctx, insexSql); err != nil {
 			return nil
 		}
 	}
@@ -295,12 +296,12 @@ type sqliteColumnStruct struct {
 	Pk        bool
 }
 
-func (m *SqliteMigrator) tableStruct(tableName string) (*sqliteTableStruct, error) {
-	columns, err := m.parseColumns(tableName)
+func (m *SqliteMigrator) tableStruct(ctx context.Context, tableName string) (*sqliteTableStruct, error) {
+	columns, err := m.parseColumns(ctx, tableName)
 	if err != nil {
 		return nil, err
 	}
-	indexSqls, err := m.parseIndexSqls(tableName)
+	indexSqls, err := m.parseIndexSqls(ctx, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -310,9 +311,9 @@ func (m *SqliteMigrator) tableStruct(tableName string) (*sqliteTableStruct, erro
 	}, nil
 }
 
-func (m *SqliteMigrator) parseColumns(tableName string) ([]*sqliteColumnStruct, error) {
+func (m *SqliteMigrator) parseColumns(ctx context.Context, tableName string) ([]*sqliteColumnStruct, error) {
 	// 查询表结构
-	rows, err := m.driver.Query("PRAGMA table_info (?)", tableName)
+	rows, err := m.driver.Query(ctx, "PRAGMA table_info (?)", tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -328,8 +329,8 @@ func (m *SqliteMigrator) parseColumns(tableName string) ([]*sqliteColumnStruct, 
 	return columns, nil
 }
 
-func (m *SqliteMigrator) parseIndexSqls(tableName string) ([]string, error) {
-	rows, err := m.driver.Query("select sql from sqlite_master where sql is not null and type = 'index' and lower(tbl_name) = ?", strings.ToLower(tableName))
+func (m *SqliteMigrator) parseIndexSqls(ctx context.Context, tableName string) ([]string, error) {
+	rows, err := m.driver.Query(ctx, "select sql from sqlite_master where sql is not null and type = 'index' and lower(tbl_name) = ?", strings.ToLower(tableName))
 	if err != nil {
 		return nil, err
 	}
@@ -345,30 +346,30 @@ func (m *SqliteMigrator) parseIndexSqls(tableName string) ([]string, error) {
 	return sqls, nil
 }
 
-func (m *SqliteMigrator) dropTable(node *DropTableNode) error {
-	return m.driver.Execute(fmt.Sprintf("DROP TABLE %s", node.TableName))
+func (m *SqliteMigrator) dropTable(ctx context.Context, node *DropTableNode) error {
+	return m.driver.Execute(ctx, fmt.Sprintf("DROP TABLE %s", node.TableName))
 }
 
-func (m *SqliteMigrator) dropIndex(node *DropIndexNode) error {
-	return m.driver.Execute(fmt.Sprintf("DROP INDEX %s", node.IndexName))
+func (m *SqliteMigrator) dropIndex(ctx context.Context, node *DropIndexNode) error {
+	return m.driver.Execute(ctx, fmt.Sprintf("DROP INDEX %s", node.IndexName))
 }
 
-func (m *SqliteMigrator) addColumn(node *AddColumnNode) error {
+func (m *SqliteMigrator) addColumn(ctx context.Context, node *AddColumnNode) error {
 	for _, column := range node.Columns {
 		var builder strings.Builder
 		builder.WriteString("ALTER TABLE ")
 		builder.WriteString(node.TableName)
 		builder.WriteString(" ADD ")
 		m.createTableColumn(column, &builder)
-		if err := m.driver.Execute(builder.String()); err != nil {
+		if err := m.driver.Execute(ctx, builder.String()); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *SqliteMigrator) alterColumn(node *AlterColumnNode) error {
-	info, err := m.tableStruct(node.TableName)
+func (m *SqliteMigrator) alterColumn(ctx context.Context, node *AlterColumnNode) error {
+	info, err := m.tableStruct(ctx, node.TableName)
 	if err != nil {
 		return err
 	}
@@ -402,12 +403,12 @@ func (m *SqliteMigrator) alterColumn(node *AlterColumnNode) error {
 		}
 	}
 	builder.WriteString("\n)")
-	return m.copyTable(builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
+	return m.copyTable(ctx, builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
 }
 
-func (m *SqliteMigrator) dropColumn(node *DropColumnNode) error {
+func (m *SqliteMigrator) dropColumn(ctx context.Context, node *DropColumnNode) error {
 	// 查询表结构
-	info, err := m.tableStruct(node.TableName)
+	info, err := m.tableStruct(ctx, node.TableName)
 	if err != nil {
 		return err
 	}
@@ -440,12 +441,12 @@ func (m *SqliteMigrator) dropColumn(node *DropColumnNode) error {
 		}
 	}
 	builder.WriteString("\n)")
-	return m.copyTable(builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
+	return m.copyTable(ctx, builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
 }
 
-func (m *SqliteMigrator) dropPrimaryKey(node *DropPrimaryKeyNode) error {
+func (m *SqliteMigrator) dropPrimaryKey(ctx context.Context, node *DropPrimaryKeyNode) error {
 	// 查询表结构
-	info, err := m.tableStruct(node.TableName)
+	info, err := m.tableStruct(ctx, node.TableName)
 	if err != nil {
 		return err
 	}
@@ -474,24 +475,24 @@ func (m *SqliteMigrator) dropPrimaryKey(node *DropPrimaryKeyNode) error {
 		}
 	}
 	builder.WriteString("\n)")
-	return m.copyTable(builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
+	return m.copyTable(ctx, builder.String(), columnNames, tmpTableName, node.TableName, info.indexs)
 }
 
-func (m *SqliteMigrator) renameTable(node *RenameTableNode) error {
-	return m.driver.Execute(fmt.Sprintf("alter table %s rename to %s", node.TableName, node.NewTableName))
+func (m *SqliteMigrator) renameTable(ctx context.Context, node *RenameTableNode) error {
+	return m.driver.Execute(ctx, fmt.Sprintf("alter table %s rename to %s", node.TableName, node.NewTableName))
 }
 
-func (m *SqliteMigrator) alterTableRemarks(node *AlterTableRemarksNode) error {
+func (m *SqliteMigrator) alterTableRemarks(ctx context.Context, node *AlterTableRemarksNode) error {
 	// 不支持
 	return nil
 }
 
-func (m *SqliteMigrator) script(node *ScriptNode) error {
+func (m *SqliteMigrator) script(ctx context.Context, node *ScriptNode) error {
 	if (node.Dialect != "" && node.Dialect != m.Name()) || node.Value == "" {
 		return nil
 	}
 	for _, statement := range splitSQLStatements(node.Value) {
-		if err := m.driver.Execute(statement); err != nil {
+		if err := m.driver.Execute(ctx, statement); err != nil {
 			return err
 		}
 	}

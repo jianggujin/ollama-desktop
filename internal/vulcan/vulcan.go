@@ -2,6 +2,7 @@ package vulcan
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"io"
 	"sort"
@@ -20,6 +21,10 @@ func NewVulcan(migrator Migrator, source Source) *Vulcan {
 }
 
 func (v *Vulcan) Migrate() error {
+	return v.MigrateContext(context.Background())
+}
+
+func (v *Vulcan) MigrateContext(ctx context.Context) error {
 	// 1 查找版本
 	sources, err := v.source.Scan()
 	if err != nil {

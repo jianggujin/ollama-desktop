@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "version": "V0.0.1",
+  "version": "v0.0.1",
   "name": "ollama-desktop",
   "outputfilename": "ollama-desktop",
   "frontend:install": "npm install",
@@ -10,7 +10,7 @@
   "info": {
     "companyName": "ollama-desktop",
     "productName": "ollama-desktop",
-    "productVersion": "V0.0.1",
+    "productVersion": "v0.0.1",
     "comments": "ollama desktop, powered by jianggujin (https://www.jianggujin.com)"
   },
   "author": {

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<vulcan xmlns="http://www.jianggujin.com/xml/vulcan"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.jianggujin.com/xml/vulcan
+                   ../../vulcan/vulcan.xsd">
+    <createTable tableName="t_config" remarks="配置信息表">
+        <column columnName="id" dataType="BIGINT" primaryKey="true" remarks="主键"/>
+        <column columnName="config_key" dataType="VARCHAR" maxLength="100" nullable="false" unique="true"
+                remarks="配置键"/>
+        <column columnName="config_value" dataType="TEXT" remarks="配置值"/>
+        <column columnName="config_comment" dataType="VARCHAR" maxLength="500" remarks="配置说明"/>
+        <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
+        <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
+    </createTable>
+</vulcan>

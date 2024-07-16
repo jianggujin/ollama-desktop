@@ -101,14 +101,12 @@ type ScriptNode struct {
 
 type Migrator interface {
 	// 最后一次版本信息
-	LastVersion() (*version.Version, error)
+	LastVersion(context.Context) (*version.Version, error)
 	// 合并指定版本
-	Migrate([]Node, *version.Version) error
+	Migrate(context.Context, []Node, *version.Version) error
 }
 
 type Driver interface {
-	Execute(string, ...interface{}) error
-	ExecuteContext(context.Context, string, ...interface{}) error
-	Query(string, ...interface{}) (*sql.Rows, error)
-	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+	Execute(context.Context, string, ...interface{}) error
+	Query(context.Context, string, ...interface{}) (*sql.Rows, error)
 }

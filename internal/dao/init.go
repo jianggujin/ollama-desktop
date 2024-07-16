@@ -5,16 +5,11 @@ import (
 	"database/sql"
 	"embed"
 	_ "github.com/glebarez/go-sqlite"
-	"github.com/hashicorp/go-version"
 	"ollama-desktop/internal/vulcan"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 	"time"
 )
-
-const dbHistoryTable = "t_db_history"
 
 //go:embed sql
 var sqlFiles embed.FS
@@ -26,14 +21,14 @@ type DbDao struct {
 
 var Dao *DbDao
 
-func (d *DbDao) startup(ctx context.Context) {
+func (d *DbDao) Startup(ctx context.Context) {
 	d.ctx = ctx
 	if err := d.init(); err != nil {
 		panic(err)
 	}
 }
 
-func (d *DbDao) shutdown(ctx context.Context) {
+func (d *DbDao) Shutdown() {
 	if d.db != nil {
 		d.db.Close()
 		d.db = nil
@@ -69,57 +64,5 @@ func (d *DbDao) migrate() error {
 		Fs:    sqlFiles,
 		Paths: []string{"sql"},
 	})
-	return migrate.Migrate()
-}
-
-func (d *DbDao) initDbHistory() error {
-	rows, err := d.db.QueryContext(d.ctx, "SELECT name FROM sqlite_master WHERE type = 'table'")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var tableName string
-		if err := rows.Scan(&tableName); err != nil {
-			return err
-		}
-		if dbHistoryTable == strings.ToLower(tableName) {
-			return nil
-		}
-	}
-
-	_, err = d.db.ExecContext(d.ctx, "CREATE TABLE "+dbHistoryTable+"(id INTEGER PRIMARY KEY AUTOINCREMENT, db_version VARCHAR(255) NOT NULL, is_success TINYINT DEFAULT 0 NOT NULL, created_at DATETIME, updated_at DATETIME)")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DbDao) lastVersion() (*version.Version, error) {
-	if err := d.initDbHistory(); err != nil {
-		return nil, err
-	}
-	rows, err := d.db.QueryContext(d.ctx, "SELECT db_version FROM "+dbHistoryTable+" WHERE is_success = 1")
-	if err != nil {
-		return nil, err
-	}
-	var versions []*version.Version
-	defer rows.Close()
-	for rows.Next() {
-		var dbVersion string
-		if err := rows.Scan(&dbVersion); err != nil {
-			return nil, err
-		}
-		ver, err := version.NewVersion(dbVersion)
-		if err != nil {
-			return nil, err
-		}
-		versions = append(versions, ver)
-	}
-	if len(versions) == 0 {
-		return nil, nil
-	}
-	sort.Sort(version.Collection(versions))
-	return versions[len(versions)-1], nil
+	return migrate.MigrateContext(d.ctx)
 }

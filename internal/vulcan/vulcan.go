@@ -40,7 +40,7 @@ func (v *Vulcan) MigrateContext(ctx context.Context) error {
 	})
 
 	// 2 查询历史执行版本
-	lastVersion, err := v.migrator.LastVersion()
+	lastVersion, err := v.migrator.LastVersion(ctx)
 	if err != nil {
 		return nil
 	}
@@ -55,7 +55,7 @@ func (v *Vulcan) MigrateContext(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if err := v.migrator.Migrate(nodes, source.Version); err != nil {
+		if err := v.migrator.Migrate(ctx, nodes, source.Version); err != nil {
 			return err
 		}
 	}

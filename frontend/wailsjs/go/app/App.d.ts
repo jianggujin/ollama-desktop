@@ -5,6 +5,4 @@ export function AppBuildTime():Promise<string>;
 
 export function AppVersion():Promise<string>;
 
-export function Greet(arg1:string):Promise<string>;
-
 export function OllamaHost():Promise<string>;

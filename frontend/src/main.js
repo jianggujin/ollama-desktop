@@ -1,5 +1,11 @@
 import {createApp} from 'vue'
 import App from './App.vue'
-import './style.css';
+import router from './router'
+
 import 'element-plus/theme-chalk/dark/css-vars.css'
-createApp(App).mount('#app')
+import "element-plus/theme-chalk/src/message.scss"
+import "~/styles/index.scss"
+
+const app = createApp(App);
+app.use(router);
+app.mount("#app");

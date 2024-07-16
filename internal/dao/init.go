@@ -55,6 +55,7 @@ func (d *DbDao) init() error {
 	db.SetConnMaxLifetime(time.Duration(3600) * time.Second)
 	// SetConnMaxIdleTime sets the maximum amount of time a connection may be idle.
 	db.SetConnMaxIdleTime(time.Duration(1800) * time.Second)
+	d.db = db
 	return d.migrate()
 }
 

@@ -10,10 +10,6 @@ export function AppVersion() {
   return window['go']['app']['App']['AppVersion']();
 }
 
-export function Greet(arg1) {
-  return window['go']['app']['App']['Greet'](arg1);
-}
-
 export function OllamaHost() {
   return window['go']['app']['App']['OllamaHost']();
 }

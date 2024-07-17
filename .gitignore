@@ -5,3 +5,7 @@ frontend/dist
 bin
 .DS_Store
 *.log
+
+/frontend/src/auto-imports.d.ts
+/frontend/src/components.d.ts
+/config/ollama-desktop.db

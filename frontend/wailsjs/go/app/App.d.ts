@@ -6,3 +6,5 @@ export function AppBuildTime():Promise<string>;
 export function AppVersion():Promise<string>;
 
 export function OllamaHost():Promise<string>;
+
+export function Quit():Promise<void>;

@@ -1,18 +1,47 @@
-import { createWebHistory, createRouter } from "vue-router";
+import {
+    createWebHistory,
+    createRouter
+} from "vue-router";
+import Layout from '~/layout/index.vue'
+import Home from '~/layout/home.vue'
 
-const routes = [
-  {
-    path: '/',
-    component: () => import('~/components/HelloWorld.vue')  // 首页组件
-  }, {
-    path: '/about',
-    component: () => import('~/components/About.vue')  // 关于我们组件
-  }
+const routes = [{
+        path: '/',
+        component: Layout,
+        redirect: '/home',
+        children: [{
+                path: 'home',
+                component: Home,
+                redirect: '/home/about',
+                children: [{
+                    path: 'about',
+                    component: () => import('~/views/about/index.vue')
+                }]
+            },
+            {
+                path: 'about',
+                component: () => import('~/views/about/index.vue')
+            }
+        ]
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        redirect: '/home'
+    },
 ]
 
 const router = createRouter({
-  history: createWebHistory(), // 路由类型
-  routes // short for `routes: routes`
+    history: createWebHistory(), // 路由类型
+    routes, // short for `routes: routes`
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        } else {
+            return {
+                top: 0
+            }
+        }
+    }
 })
 
 

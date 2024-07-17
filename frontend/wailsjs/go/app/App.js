@@ -13,3 +13,7 @@ export function AppVersion() {
 export function OllamaHost() {
   return window['go']['app']['App']['OllamaHost']();
 }
+
+export function Quit() {
+  return window['go']['app']['App']['Quit']();
+}

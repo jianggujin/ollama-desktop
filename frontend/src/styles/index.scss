@@ -1,0 +1,16 @@
+html.dark {
+    img {
+        filter: brightness(0.8) saturate(1.25);
+    }
+}
+html,body,#app {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+#app {
+    width: 100%;
+}
+*:focus {
+    outline: none;
+}

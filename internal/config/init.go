@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -30,6 +31,31 @@ type Logging struct {
 	LocalTime  bool   `json:"localTime"`  // 使用本地时间创建时间戳
 }
 
+// 代理配置
+type Proxy struct {
+	Scheme   string `json:"scheme"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (p *Proxy) ToUrl() *url.URL {
+	u := &url.URL{
+		Scheme: p.Scheme,
+		User:   url.UserPassword(p.Username, p.Password),
+		Host:   p.Host,
+	}
+	if p.Username != "" && p.Password != "" {
+		if p.Password != "" {
+			u.User = url.UserPassword(p.Username, p.Password)
+		} else {
+			u.User = url.User(p.Username)
+		}
+	}
+	return u
+}
+
 // Ollama配置
 type OllamaHost struct {
 	Scheme string `json:"scheme"`
@@ -37,7 +63,7 @@ type OllamaHost struct {
 	Port   string `json:"port"`
 }
 
-func (o OllamaHost) String() string {
+func (o *OllamaHost) String() string {
 	return fmt.Sprintf("%s://%s:%s", nvl(o.Scheme, "http"), nvl(o.Host, "127.0.0.1"), nvl(o.Port, "11434"))
 }
 
@@ -48,6 +74,7 @@ type Ollama struct {
 type AppConfig struct {
 	Logging Logging `json:"logging"`
 	Ollama  Ollama  `json:"ollama"`
+	Proxy   *Proxy  `json:"proxy"`
 }
 
 var Config AppConfig
@@ -109,7 +136,6 @@ func isExist(filename string) (bool, error) {
 
 func getOllamaHost() (*OllamaHost, error) {
 	defaultPort := "11434"
-
 	hostVar := os.Getenv("OLLAMA_HOST")
 	hostVar = strings.TrimSpace(strings.Trim(strings.TrimSpace(hostVar), "\"'"))
 

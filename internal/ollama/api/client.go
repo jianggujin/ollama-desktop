@@ -1,16 +1,3 @@
-// Package api implements the client-side API for code wishing to interact
-// with the ollama service. The methods of the [Client] type correspond to
-// the ollama REST API as described in [the API documentation].
-// The ollama command-line client itself uses this package to interact with
-// the backend service.
-//
-// # Examples
-//
-// Several examples of using this package are available [in the GitHub
-// repository].
-//
-// [the API documentation]: https://github.com/ollama/ollama/blob/main/docs/api.md
-// [in the GitHub repository]: https://github.com/ollama/ollama/tree/main/examples
 package api
 
 import (
@@ -24,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"ollama-desktop/internal/config"
+	"ollama-desktop/internal/ollama"
 	"ollama-desktop/internal/ollama/format"
 	"runtime"
 )
@@ -40,7 +28,7 @@ func checkError(resp *http.Response, body []byte) error {
 		return nil
 	}
 
-	apiError := StatusError{StatusCode: resp.StatusCode}
+	apiError := ollama.StatusError{StatusCode: resp.StatusCode}
 
 	err := json.Unmarshal(body, &apiError)
 	if err != nil {
@@ -180,7 +168,7 @@ func (c *Client) stream(ctx context.Context, method, path string, data any, fn f
 		}
 
 		if response.StatusCode >= http.StatusBadRequest {
-			return StatusError{
+			return ollama.StatusError{
 				StatusCode:   response.StatusCode,
 				Status:       response.Status,
 				ErrorMessage: errorResponse.Error,
@@ -198,14 +186,14 @@ func (c *Client) stream(ctx context.Context, method, path string, data any, fn f
 // GenerateResponseFunc is a function that [Client.Generate] invokes every time
 // a response is received from the service. If this function returns an error,
 // [Client.Generate] will stop generating and return this error.
-type GenerateResponseFunc func(GenerateResponse) error
+type GenerateResponseFunc func(ollama.GenerateResponse) error
 
 // Generate generates a response for a given prompt. The req parameter should
 // be populated with prompt details. fn is called for each response (there may
 // be multiple responses, e.g. in case streaming is enabled).
-func (c *Client) Generate(ctx context.Context, req *GenerateRequest, fn GenerateResponseFunc) error {
+func (c *Client) Generate(ctx context.Context, req *ollama.GenerateRequest, fn GenerateResponseFunc) error {
 	return c.stream(ctx, http.MethodPost, "/api/generate", req, func(bts []byte) error {
-		var resp GenerateResponse
+		var resp ollama.GenerateResponse
 		if err := json.Unmarshal(bts, &resp); err != nil {
 			return err
 		}
@@ -217,15 +205,15 @@ func (c *Client) Generate(ctx context.Context, req *GenerateRequest, fn Generate
 // ChatResponseFunc is a function that [Client.Chat] invokes every time
 // a response is received from the service. If this function returns an error,
 // [Client.Chat] will stop generating and return this error.
-type ChatResponseFunc func(ChatResponse) error
+type ChatResponseFunc func(ollama.ChatResponse) error
 
 // Chat generates the next message in a chat. [ChatRequest] may contain a
 // sequence of messages which can be used to maintain chat history with a model.
 // fn is called for each response (there may be multiple responses, e.g. if case
 // streaming is enabled).
-func (c *Client) Chat(ctx context.Context, req *ChatRequest, fn ChatResponseFunc) error {
+func (c *Client) Chat(ctx context.Context, req *ollama.ChatRequest, fn ChatResponseFunc) error {
 	return c.stream(ctx, http.MethodPost, "/api/chat", req, func(bts []byte) error {
-		var resp ChatResponse
+		var resp ollama.ChatResponse
 		if err := json.Unmarshal(bts, &resp); err != nil {
 			return err
 		}
@@ -237,14 +225,14 @@ func (c *Client) Chat(ctx context.Context, req *ChatRequest, fn ChatResponseFunc
 // PullProgressFunc is a function that [Client.Pull] invokes every time there
 // is progress with a "pull" request sent to the service. If this function
 // returns an error, [Client.Pull] will stop the process and return this error.
-type PullProgressFunc func(ProgressResponse) error
+type PullProgressFunc func(ollama.ProgressResponse) error
 
 // Pull downloads a model from the ollama library. fn is called each time
 // progress is made on the request and can be used to display a progress bar,
 // etc.
-func (c *Client) Pull(ctx context.Context, req *PullRequest, fn PullProgressFunc) error {
+func (c *Client) Pull(ctx context.Context, req *ollama.PullRequest, fn PullProgressFunc) error {
 	return c.stream(ctx, http.MethodPost, "/api/pull", req, func(bts []byte) error {
-		var resp ProgressResponse
+		var resp ollama.ProgressResponse
 		if err := json.Unmarshal(bts, &resp); err != nil {
 			return err
 		}
@@ -256,14 +244,14 @@ func (c *Client) Pull(ctx context.Context, req *PullRequest, fn PullProgressFunc
 // PushProgressFunc is a function that [Client.Push] invokes when progress is
 // made.
 // It's similar to other progress function types like [PullProgressFunc].
-type PushProgressFunc func(ProgressResponse) error
+type PushProgressFunc func(ollama.ProgressResponse) error
 
 // Push uploads a model to the model library; requires registering for ollama.ai
 // and adding a public key first. fn is called each time progress is made on
 // the request and can be used to display a progress bar, etc.
-func (c *Client) Push(ctx context.Context, req *PushRequest, fn PushProgressFunc) error {
+func (c *Client) Push(ctx context.Context, req *ollama.PushRequest, fn PushProgressFunc) error {
 	return c.stream(ctx, http.MethodPost, "/api/push", req, func(bts []byte) error {
-		var resp ProgressResponse
+		var resp ollama.ProgressResponse
 		if err := json.Unmarshal(bts, &resp); err != nil {
 			return err
 		}
@@ -275,15 +263,15 @@ func (c *Client) Push(ctx context.Context, req *PushRequest, fn PushProgressFunc
 // CreateProgressFunc is a function that [Client.Create] invokes when progress
 // is made.
 // It's similar to other progress function types like [PullProgressFunc].
-type CreateProgressFunc func(ProgressResponse) error
+type CreateProgressFunc func(ollama.ProgressResponse) error
 
 // Create creates a model from a [Modelfile]. fn is a progress function that
 // behaves similarly to other methods (see [Client.Pull]).
 //
 // [Modelfile]: https://github.com/ollama/ollama/blob/main/docs/modelfile.md
-func (c *Client) Create(ctx context.Context, req *CreateRequest, fn CreateProgressFunc) error {
+func (c *Client) Create(ctx context.Context, req *ollama.CreateRequest, fn CreateProgressFunc) error {
 	return c.stream(ctx, http.MethodPost, "/api/create", req, func(bts []byte) error {
-		var resp ProgressResponse
+		var resp ollama.ProgressResponse
 		if err := json.Unmarshal(bts, &resp); err != nil {
 			return err
 		}
@@ -293,8 +281,8 @@ func (c *Client) Create(ctx context.Context, req *CreateRequest, fn CreateProgre
 }
 
 // List lists models that are available locally.
-func (c *Client) List(ctx context.Context) (*ListResponse, error) {
-	var lr ListResponse
+func (c *Client) List(ctx context.Context) (*ollama.ListResponse, error) {
+	var lr ollama.ListResponse
 	if err := c.do(ctx, http.MethodGet, "/api/tags", nil, &lr); err != nil {
 		return nil, err
 	}
@@ -302,8 +290,8 @@ func (c *Client) List(ctx context.Context) (*ListResponse, error) {
 }
 
 // List running models.
-func (c *Client) ListRunning(ctx context.Context) (*ProcessResponse, error) {
-	var lr ProcessResponse
+func (c *Client) ListRunning(ctx context.Context) (*ollama.ProcessResponse, error) {
+	var lr ollama.ProcessResponse
 	if err := c.do(ctx, http.MethodGet, "/api/ps", nil, &lr); err != nil {
 		return nil, err
 	}
@@ -312,7 +300,7 @@ func (c *Client) ListRunning(ctx context.Context) (*ProcessResponse, error) {
 
 // Copy copies a model - creating a model with another name from an existing
 // model.
-func (c *Client) Copy(ctx context.Context, req *CopyRequest) error {
+func (c *Client) Copy(ctx context.Context, req *ollama.CopyRequest) error {
 	if err := c.do(ctx, http.MethodPost, "/api/copy", req, nil); err != nil {
 		return err
 	}
@@ -320,7 +308,7 @@ func (c *Client) Copy(ctx context.Context, req *CopyRequest) error {
 }
 
 // Delete deletes a model and its data.
-func (c *Client) Delete(ctx context.Context, req *DeleteRequest) error {
+func (c *Client) Delete(ctx context.Context, req *ollama.DeleteRequest) error {
 	if err := c.do(ctx, http.MethodDelete, "/api/delete", req, nil); err != nil {
 		return err
 	}
@@ -328,8 +316,8 @@ func (c *Client) Delete(ctx context.Context, req *DeleteRequest) error {
 }
 
 // Show obtains model information, including details, modelfile, license etc.
-func (c *Client) Show(ctx context.Context, req *ShowRequest) (*ShowResponse, error) {
-	var resp ShowResponse
+func (c *Client) Show(ctx context.Context, req *ollama.ShowRequest) (*ollama.ShowResponse, error) {
+	var resp ollama.ShowResponse
 	if err := c.do(ctx, http.MethodPost, "/api/show", req, &resp); err != nil {
 		return nil, err
 	}
@@ -346,8 +334,8 @@ func (c *Client) Heartbeat(ctx context.Context) error {
 }
 
 // Embeddings generates embeddings from a model.
-func (c *Client) Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
-	var resp EmbeddingResponse
+func (c *Client) Embeddings(ctx context.Context, req *ollama.EmbeddingRequest) (*ollama.EmbeddingResponse, error) {
+	var resp ollama.EmbeddingResponse
 	if err := c.do(ctx, http.MethodPost, "/api/embeddings", req, &resp); err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ module ollama-desktop
 go 1.20
 
 require (
+	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/hashicorp/go-version v1.7.0
 	github.com/rs/zerolog v1.33.0
@@ -11,6 +12,7 @@ require (
 )
 
 require (
+	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

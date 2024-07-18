@@ -1,4 +1,4 @@
-package api
+package ollama
 
 import (
 	"encoding/json"
@@ -630,4 +630,33 @@ func FormatParams(params map[string][]string) (map[string]interface{}, error) {
 	}
 
 	return out, nil
+}
+
+type SearchPreviewItem struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type SearchResult struct {
+	Query     string        `json:"query"`
+	Page      int           `json:"page"`
+	PageCount int           `json:"pageCount"`
+	Items     []*SearchItem `json:"items"`
+}
+
+type SearchItem struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	PullCount   int      `json:"pullCount"`
+	Tags        []string `json:"tags"`
+	TagCount    int      `json:"tagCount"`
+	UpdateTime  string   `json:"updateTime"`
+}
+
+func (r *SearchResult) HasPrevious() bool {
+	return r.Page > 1
+}
+
+func (r *SearchResult) HasNext() bool {
+	return r.Page < r.PageCount
 }

@@ -1,10 +1,14 @@
 package format
 
 import (
+	"github.com/dustin/go-humanize"
 	"testing"
+	"time"
 )
 
 func TestHumanNumber(t *testing.T) {
+	t.Logf("That file is %s.\n", humanize.Bytes(82854982))
+	t.Logf("This was touched %s.", humanize.Time(time.Now().Add(-30*time.Minute))) // This was touched 7 hours ago.
 	type testCase struct {
 		input    uint64
 		expected string

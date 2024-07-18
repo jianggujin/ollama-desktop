@@ -55,3 +55,16 @@ func TestClient_Library(t *testing.T) {
 		t.Log(item)
 	}
 }
+
+func TestClient_ModelTags(t *testing.T) {
+	model := "gemma2"
+	client, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := client.ModelTags(context.Background(), model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(response.Model)
+}

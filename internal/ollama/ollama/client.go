@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io"
@@ -86,7 +87,7 @@ func (c *Client) do(ctx context.Context, path string, reqData map[string]string)
 	return respBody, nil
 }
 
-func (c *Client) SearchPreview(ctx context.Context, q string) ([]*ollama.SearchPreviewItem, error) {
+func (c *Client) SearchPreview(ctx context.Context, q string) ([]*ollama.SimpleModelInfo, error) {
 	respBody, err := c.do(ctx, "/search-preview", map[string]string{"q": q})
 	if err != nil {
 		return nil, err
@@ -95,10 +96,10 @@ func (c *Client) SearchPreview(ctx context.Context, q string) ([]*ollama.SearchP
 	if err != nil {
 		return nil, err
 	}
-	var list []*ollama.SearchPreviewItem
+	var list []*ollama.SimpleModelInfo
 	doc.Find("ul li a").Each(func(i int, item *goquery.Selection) {
 		children := item.Children()
-		list = append(list, &ollama.SearchPreviewItem{
+		list = append(list, &ollama.SimpleModelInfo{
 			Name:        strings.TrimSpace(children.First().Text()),
 			Description: strings.TrimSpace(children.Last().Text()),
 		})
@@ -106,7 +107,7 @@ func (c *Client) SearchPreview(ctx context.Context, q string) ([]*ollama.SearchP
 	return list, nil
 }
 
-func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchResult, error) {
+func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchResponse, error) {
 	if p <= 0 {
 		p = 1
 	}
@@ -121,7 +122,7 @@ func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchRes
 	if err != nil {
 		return nil, err
 	}
-	var list []*ollama.SearchItem
+	var list []*ollama.ModelInfo
 
 	// 解析模型信息
 	doc.Find("ul.grid li a").Each(func(_ int, item *goquery.Selection) {
@@ -134,20 +135,20 @@ func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchRes
 		content.Find("div.space-x-2 > span").Each(func(_ int, tag *goquery.Selection) {
 			tags = append(tags, strings.TrimSpace(tag.Text()))
 		})
-		pullCount := 0
+		pullCount := ""
 		tagCount := 0
 		updated := ""
 		content.Find("p.my-2 > span").Each(func(_ int, info *goquery.Selection) {
 			text := strings.ReplaceAll(strings.TrimSpace(info.Text()), "\t", " ")
 			if strings.HasSuffix(text, "Pulls") || strings.HasSuffix(text, "Pull") {
-				pullCount, _ = strconv.Atoi(strings.TrimSpace(text[0 : len(text)-5]))
+				pullCount = strings.TrimSpace(text[0 : len(text)-5])
 			} else if strings.HasSuffix(text, "Tag") || strings.HasSuffix(text, "Tags") {
 				tagCount, _ = strconv.Atoi(strings.TrimSpace(text[0 : len(text)-4]))
 			} else if strings.HasPrefix(text, "Updated") {
 				updated = strings.TrimSpace(text[7:])
 			}
 		})
-		list = append(list, &ollama.SearchItem{
+		list = append(list, &ollama.ModelInfo{
 			Name:        name,
 			Description: description,
 			Tags:        tags,
@@ -170,7 +171,7 @@ func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchRes
 		}
 	})
 
-	return &ollama.SearchResult{
+	return &ollama.SearchResponse{
 		Query:     q,
 		Page:      p,
 		PageCount: pageCount,
@@ -178,7 +179,7 @@ func (c *Client) Search(ctx context.Context, q string, p int) (*ollama.SearchRes
 	}, nil
 }
 
-func (c *Client) Library(ctx context.Context, q, sort string) ([]*ollama.SearchItem, error) {
+func (c *Client) Library(ctx context.Context, q, sort string) ([]*ollama.ModelInfo, error) {
 	if sort == "" {
 		sort = "featured"
 	}
@@ -193,7 +194,7 @@ func (c *Client) Library(ctx context.Context, q, sort string) ([]*ollama.SearchI
 	if err != nil {
 		return nil, err
 	}
-	var list []*ollama.SearchItem
+	var list []*ollama.ModelInfo
 
 	// 解析模型信息
 	doc.Find("ul.grid li a").Each(func(_ int, item *goquery.Selection) {
@@ -206,20 +207,20 @@ func (c *Client) Library(ctx context.Context, q, sort string) ([]*ollama.SearchI
 		content.Find("div.space-x-2 > span").Each(func(_ int, tag *goquery.Selection) {
 			tags = append(tags, strings.TrimSpace(tag.Text()))
 		})
-		pullCount := 0
+		pullCount := ""
 		tagCount := 0
 		updated := ""
 		content.Find("p.my-2 > span").Each(func(_ int, info *goquery.Selection) {
 			text := strings.ReplaceAll(strings.TrimSpace(info.Text()), "\t", " ")
 			if strings.HasSuffix(text, "Pulls") || strings.HasSuffix(text, "Pull") {
-				pullCount, _ = strconv.Atoi(strings.TrimSpace(text[0 : len(text)-5]))
+				pullCount = strings.TrimSpace(text[0 : len(text)-5])
 			} else if strings.HasSuffix(text, "Tag") || strings.HasSuffix(text, "Tags") {
 				tagCount, _ = strconv.Atoi(strings.TrimSpace(text[0 : len(text)-4]))
 			} else if strings.HasPrefix(text, "Updated") {
 				updated = strings.TrimSpace(text[7:])
 			}
 		})
-		list = append(list, &ollama.SearchItem{
+		list = append(list, &ollama.ModelInfo{
 			Name:        name,
 			Description: description,
 			Tags:        tags,
@@ -230,4 +231,59 @@ func (c *Client) Library(ctx context.Context, q, sort string) ([]*ollama.SearchI
 	})
 
 	return list, err
+}
+
+func (c *Client) ModelTags(ctx context.Context, model string) (*ollama.ModelTagsResponse, error) {
+	respBody, err := c.do(ctx, fmt.Sprintf("/library/%s/tags", model), nil)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(respBody))
+	if err != nil {
+		return nil, err
+	}
+
+	sections := doc.Find("div main section")
+	// 解析模型信息
+	if sections.Size() != 2 {
+		return nil, errors.New("No Model")
+	}
+
+	node := sections.First().Children()
+
+	modelInfo := &ollama.ModelInfo{
+		Name:        strings.TrimSpace(node.Eq(0).Text()),
+		Description: strings.TrimSpace(node.Eq(1).Text()),
+	}
+
+	var tags []string
+	node.Eq(2).Find("span").Each(func(_ int, tag *goquery.Selection) {
+		tags = append(tags, strings.TrimSpace(tag.Text()))
+	})
+	modelInfo.Tags = tags
+
+	node = node.Eq(3).Children()
+	text := strings.TrimSpace(node.Eq(0).Text())
+	modelInfo.PullCount = strings.TrimSpace(text[0 : len(text)-5])
+	text = strings.TrimSpace(node.Eq(1).Text())
+	modelInfo.UpdateTime = strings.TrimSpace(text[7:])
+
+	response := &ollama.ModelTagsResponse{
+		Model: modelInfo,
+	}
+
+	node = sections.Last().Find("div.px-4.py-3")
+
+	if node.Size() <= 1 {
+		modelInfo.TagCount = 0
+		return response, nil
+	}
+	var modelTags []*ollama.ModelTag
+	for i := 1; i < node.Size(); i++ {
+		tagNode := node.Eq(i)
+		println(tagNode.Text())
+	}
+	response.Tags = modelTags
+
+	return response, err
 }

@@ -635,6 +635,7 @@ func FormatParams(params map[string][]string) (map[string]interface{}, error) {
 type SimpleModelInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Archive     bool   `json:"archive"`
 }
 
 type SearchResponse struct {
@@ -646,6 +647,7 @@ type SearchResponse struct {
 
 type ModelInfo struct {
 	Name        string   `json:"name"`
+	Archive     bool     `json:"archive"`
 	Description string   `json:"description"`
 	PullCount   string   `json:"pullCount"`
 	Tags        []string `json:"tags"`
@@ -672,4 +674,9 @@ type ModelTag struct {
 	Id         string `json:"id"`
 	Size       string `json:"size"`
 	UpdateTime string `json:"updateTime"`
+}
+
+type ModelInfoResponse struct {
+	Model  *ModelInfo `json:"model"`
+	Readme string     `json:"readme"`
 }

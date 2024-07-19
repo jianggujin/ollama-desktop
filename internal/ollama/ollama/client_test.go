@@ -6,7 +6,7 @@ import (
 )
 
 func TestClient_SearchPreview(t *testing.T) {
-	q := "qwen"
+	q := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -21,12 +21,12 @@ func TestClient_SearchPreview(t *testing.T) {
 }
 
 func TestClient_Search(t *testing.T) {
-	q := "qwen"
+	q := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := client.Search(context.Background(), q, 1)
+	result, err := client.Search(context.Background(), q, 1, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestClient_Library(t *testing.T) {
 	//<option value="popular">Most popular</option>
 	//
 	//<option value="newest">Newest</option>
-	q := "qwen"
+	q := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +57,7 @@ func TestClient_Library(t *testing.T) {
 }
 
 func TestClient_ModelTags(t *testing.T) {
-	model := "gemma2"
+	model := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
@@ -67,4 +67,21 @@ func TestClient_ModelTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(response.Model)
+	for _, item := range response.Tags {
+		t.Log(item)
+	}
+}
+
+func TestClient_ModelInfo(t *testing.T) {
+	model := "gemma2"
+	client, err := NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := client.ModelInfo(context.Background(), model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(response.Model)
+	t.Log(response.Readme)
 }

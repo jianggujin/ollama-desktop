@@ -48,7 +48,7 @@ func checkError(resp *http.Response, body []byte) error {
 //
 // If the variable is not specified, a default ollama host and port will be
 // used.
-func ClientFromEnvironment() (*Client, error) {
+func ClientFromConfig() *Client {
 	ollamaHost := config.Config.Ollama.Host
 
 	return &Client{
@@ -57,13 +57,6 @@ func ClientFromEnvironment() (*Client, error) {
 			Host:   net.JoinHostPort(ollamaHost.Host, ollamaHost.Port),
 		},
 		http: http.DefaultClient,
-	}, nil
-}
-
-func NewClient(base *url.URL, http *http.Client) *Client {
-	return &Client{
-		base: base,
-		http: http,
 	}
 }
 
@@ -331,6 +324,15 @@ func (c *Client) Heartbeat(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+// Embed generates embeddings from a model.
+func (c *Client) Embed(ctx context.Context, req *ollama.EmbedRequest) (*ollama.EmbedResponse, error) {
+	var resp ollama.EmbedResponse
+	if err := c.do(ctx, http.MethodPost, "/api/embed", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // Embeddings generates embeddings from a model.

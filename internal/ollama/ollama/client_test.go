@@ -2,6 +2,7 @@ package ollama
 
 import (
 	"context"
+	"ollama-desktop/internal/ollama"
 	"testing"
 )
 
@@ -21,12 +22,15 @@ func TestClient_SearchPreview(t *testing.T) {
 }
 
 func TestClient_Search(t *testing.T) {
-	q := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := client.Search(context.Background(), q, 1, "")
+	result, err := client.Search(context.Background(), ollama.SearchRequest{
+		Q: "falcon",
+		P: 1,
+		C: "",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,18 +40,14 @@ func TestClient_Search(t *testing.T) {
 }
 
 func TestClient_Library(t *testing.T) {
-	//<option disabled="" value="">Sort By</option>
-	//
-	//<option value="featured" selected="">Featured</option>
-	//<option value="popular">Most popular</option>
-	//
-	//<option value="newest">Newest</option>
-	q := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
-	list, err := client.Library(context.Background(), q, "featured")
+	list, err := client.Library(context.Background(), ollama.LibraryRequest{
+		Q:    "falcon",
+		Sort: "featured",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,15 +73,18 @@ func TestClient_ModelTags(t *testing.T) {
 }
 
 func TestClient_ModelInfo(t *testing.T) {
-	model := "gemma2"
+	model := "falcon"
 	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, err := client.ModelInfo(context.Background(), model)
+	response, err := client.ModelInfo(context.Background(), model, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(response.Model)
+	for _, item := range response.Tags {
+		t.Log(item)
+	}
 	t.Log(response.Readme)
 }

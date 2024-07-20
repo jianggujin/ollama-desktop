@@ -12,8 +12,14 @@ const routes = [{
     children: [{
         path: 'home',
         component: Home,
-        redirect: '/home/ps',
+        redirect: '/home/ollama',
         children: [{
+          path: 'ollama',
+          component: () => import('~/views/home/ollama.vue')
+        }, {
+          path: 'tags',
+          component: () => import('~/views/home/tags.vue')
+        }, {
           path: 'ps',
           component: () => import('~/views/about/index.vue')
         }, {
@@ -53,6 +59,5 @@ const router = createRouter({
     }
   }
 })
-
 
 export default router

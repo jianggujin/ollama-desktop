@@ -1,25 +1,23 @@
 <template>
   <el-container>
-    <el-header height="50px">
+    <el-header>
       <nav-header />
     </el-header>
     <el-main>
-      <!-- <el-scrollbar> -->
       <router-view :key="key" />
-      <!-- </el-scrollbar> -->
     </el-main>
+    <el-footer>
+      <layout-footer />
+    </el-footer>
   </el-container>
 </template>
 <script setup>
   import NavHeader from './NavHeader.vue'
-  import {
-    useRoute
-  } from 'vue-router'
+  import LayoutFooter from './LayoutFooter.vue'
+  import { useRoute } from 'vue-router'
 
   const route = useRoute()
-  const key = computed(() => {
-    return route.path
-  })
+  const key = computed(() => { return route.path })
 </script>
 <style lang="scss" scoped>
   .el-container {
@@ -27,11 +25,17 @@
 
     .el-header {
       padding: 0;
+      height: var(--app-layout-header);
     }
 
     .el-main {
       padding: 0;
-      height: calc(100vh - 50px);
+      height: var(--app-layout-main);
+    }
+
+    .el-footer {
+      padding: 0;
+      height: var(--app-layout-footer);
     }
   }
 </style>

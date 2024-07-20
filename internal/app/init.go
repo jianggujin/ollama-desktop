@@ -58,9 +58,9 @@ func StartApp(server *assetserver.Options) error {
 		//Frameless:     true,
 		AssetServer: server,
 		//BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:     application.startup,
-		OnShutdown:    application.shutdown,
-		OnBeforeClose: application.beforeClose,
+		OnStartup:  application.startup,
+		OnDomReady: application.domReady,
+		OnShutdown: application.shutdown,
 		Bind: []interface{}{
 			application,
 		},

@@ -1,16 +1,10 @@
 <template>
   <div class="wrapper">
     <img src="/ollama.png" />
-    <div>{{ setting.count }}</div>
   </div>
 </template>
 
 <script setup>
-  import {
-    useSettingStore
-  } from "~/store/setting.js"
-
-  const setting = useSettingStore()
 </script>
 
 <style lang="scss" scoped>

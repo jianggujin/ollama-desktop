@@ -11,28 +11,23 @@
       <el-menu-item index="/setting">设置</el-menu-item>
       <el-menu-item index="/about">关于</el-menu-item>
     </el-menu>
-    <div style="margin-right: 10px;margin-left: 10px;">
-      <!-- <el-tooltip effect="dark" :content="isDark? '暗黑模式':'明亮模式'" placement="bottom"> -->
+    <!-- <div style="margin-right: 10px;margin-left: 10px;">
       <el-switch v-model="isDark" style="--el-switch-on-color: #303133; --el-switch-off-color: #606266" inline-prompt
         :active-icon="Moon" :inactive-icon="Sunny" @change="toggleDark" />
-      <!-- </el-tooltip> -->
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup>
-  import {
-    isDark,
-    toggleDark
-  } from "~/composables"
-  import {
-    Sunny,
-    Moon
-  } from '@element-plus/icons-vue'
-  import {
-    useRoute,
-    useRouter
-  } from 'vue-router'
+  // import {
+  //   isDark,
+  //   toggleDark
+  // } from "~/composables"
+  // import {
+  //   Sunny,
+  //   Moon
+  // } from '@element-plus/icons-vue'
+  import { useRoute, useRouter } from 'vue-router'
 
   const route = useRoute()
   const router = useRouter()
@@ -43,9 +38,7 @@
     }
     return "/home"
   })
-  const handleSelect = (key, keyPath) => {
-    router.replace(key)
-  }
+  const handleSelect = (key, keyPath) => { router.replace(key) }
 </script>
 
 <style lang="scss" scoped>

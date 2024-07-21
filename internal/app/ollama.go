@@ -57,12 +57,8 @@ type OllamaEnvVar struct {
 	Description string
 }
 
-func (a *App) OllamaVersion() string {
-	var version string
-	client := api.ClientFromConfig()
-	version, _ = client.Version(a.ctx)
-
-	return version
+func (a *App) OllamaVersion() (string, error) {
+	return api.ClientFromConfig().Version(a.ctx)
 }
 
 func (a *App) OllamaHeartbeat() {
@@ -98,4 +94,43 @@ func (a *App) OllamaList() (*ollama.ListResponse, error) {
 
 func (a *App) OllamaListRunning() (*ollama.ProcessResponse, error) {
 	return api.ClientFromConfig().ListRunning(a.ctx)
+}
+
+func (a *App) OllamaCopy(request *ollama.CopyRequest) error {
+	return api.ClientFromConfig().Copy(a.ctx, request)
+}
+
+func (a *App) OllamaGenerate(request *ollama.GenerateRequest, fn api.GenerateResponseFunc) error {
+	return api.ClientFromConfig().Generate(a.ctx, request, fn)
+}
+
+func (a *App) OllamaChat(request *ollama.ChatRequest, fn api.ChatResponseFunc) error {
+	return api.ClientFromConfig().Chat(a.ctx, request, fn)
+}
+
+func (a *App) OllamaPull(model string) error {
+	return api.ClientFromConfig().Pull(a.ctx, &ollama.PullRequest{
+		Model: model,
+	}, func(response ollama.ProgressResponse) error {
+		runtime.EventsEmit(a.ctx, "ollamaPull", response)
+		return nil
+	})
+}
+
+func (a *App) OllamaDelete(model string) error {
+	return api.ClientFromConfig().Delete(a.ctx, &ollama.DeleteRequest{
+		Model: model,
+	})
+}
+
+func (a *App) OllamaShow(request *ollama.ShowRequest) (*ollama.ShowResponse, error) {
+	return api.ClientFromConfig().Show(a.ctx, request)
+}
+
+func (a *App) OllamaEmbed(request *ollama.EmbedRequest) (*ollama.EmbedResponse, error) {
+	return api.ClientFromConfig().Embed(a.ctx, request)
+}
+
+func (a *App) OllamaEmbeddings(request *ollama.EmbeddingRequest) (*ollama.EmbeddingResponse, error) {
+	return api.ClientFromConfig().Embeddings(a.ctx, request)
 }

@@ -7,26 +7,20 @@
     <el-menu :default-active="activeIndex" mode="horizontal" style="margin-left: auto;" :ellipsis="false"
       @select="handleSelect">
       <el-menu-item index="/home">主页</el-menu-item>
-      <el-menu-item index="/chat">聊天</el-menu-item>
-      <el-menu-item index="/setting">设置</el-menu-item>
+      <!-- <el-menu-item index="/chat">聊天</el-menu-item> -->
+      <!-- <el-menu-item index="/setting">设置</el-menu-item> -->
       <el-menu-item index="/about">关于</el-menu-item>
     </el-menu>
-    <!-- <div style="margin-right: 10px;margin-left: 10px;">
+    <div style="margin-right: 10px;margin-left: 10px;">
       <el-switch v-model="isDark" style="--el-switch-on-color: #303133; --el-switch-off-color: #606266" inline-prompt
         :active-icon="Moon" :inactive-icon="Sunny" @change="toggleDark" />
-    </div> -->
+    </div>
   </div>
 </template>
 
 <script setup>
-  // import {
-  //   isDark,
-  //   toggleDark
-  // } from "~/composables"
-  // import {
-  //   Sunny,
-  //   Moon
-  // } from '@element-plus/icons-vue'
+  import { isDark, toggleDark } from "~/composables"
+  import { Sunny, Moon } from '@element-plus/icons-vue'
   import { useRoute, useRouter } from 'vue-router'
 
   const route = useRoute()

@@ -14,8 +14,8 @@
 
 <script setup>
   import { ElMessage } from 'element-plus'
-  import { ref } from "vue";
-  import { BrowserOpenURL, EventsOn } from "@/runtime/runtime.js"
+  import { onUnmounted, ref } from "vue";
+  import { BrowserOpenURL, EventsOn, EventsOff } from "@/runtime/runtime.js"
   import { OllamaHeartbeat, StartOllama } from "@/go/app/App.js"
   import { runAsync, runQuietly } from "~/utils/wrapper.js"
   import { useOllamaStore } from '~/store/ollama.js'
@@ -30,6 +30,10 @@
         ollamaStore.canStart = canStart
       })
     })
+  })
+
+  onUnmounted(() => {
+    runQuietly(() => { EventsOff("ollamaHeartbeat") })
   })
 
   function startOllamaApp() {

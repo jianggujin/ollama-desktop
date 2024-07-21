@@ -6,8 +6,32 @@ export function AppInfo() {
   return window['go']['app']['App']['AppInfo']();
 }
 
+export function OllamaChat(arg1, arg2) {
+  return window['go']['app']['App']['OllamaChat'](arg1, arg2);
+}
+
+export function OllamaCopy(arg1) {
+  return window['go']['app']['App']['OllamaCopy'](arg1);
+}
+
+export function OllamaDelete(arg1) {
+  return window['go']['app']['App']['OllamaDelete'](arg1);
+}
+
+export function OllamaEmbed(arg1) {
+  return window['go']['app']['App']['OllamaEmbed'](arg1);
+}
+
+export function OllamaEmbeddings(arg1) {
+  return window['go']['app']['App']['OllamaEmbeddings'](arg1);
+}
+
 export function OllamaEnvs() {
   return window['go']['app']['App']['OllamaEnvs']();
+}
+
+export function OllamaGenerate(arg1, arg2) {
+  return window['go']['app']['App']['OllamaGenerate'](arg1, arg2);
 }
 
 export function OllamaHeartbeat() {
@@ -24,6 +48,14 @@ export function OllamaList() {
 
 export function OllamaListRunning() {
   return window['go']['app']['App']['OllamaListRunning']();
+}
+
+export function OllamaPull(arg1) {
+  return window['go']['app']['App']['OllamaPull'](arg1);
+}
+
+export function OllamaShow(arg1) {
+  return window['go']['app']['App']['OllamaShow'](arg1);
 }
 
 export function OllamaVersion() {

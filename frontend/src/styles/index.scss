@@ -20,3 +20,6 @@ html,body,#app {
 *:focus {
   outline: none;
 }
+.el-menu-item:not(:hover):focus {
+  background-color: transparent!important;
+}

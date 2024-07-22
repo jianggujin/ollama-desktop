@@ -86,34 +86,6 @@ export namespace ollama {
 		    return a;
 		}
 	}
-	export class CopyRequest {
-	    source: string;
-	    destination: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new CopyRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.source = source["source"];
-	        this.destination = source["destination"];
-	    }
-	}
-	export class DeleteRequest {
-	    model: string;
-	    name: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new DeleteRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.name = source["name"];
-	    }
-	}
 	export class EmbedRequest {
 	    model: string;
 	    input: any;

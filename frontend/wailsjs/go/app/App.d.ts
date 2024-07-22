@@ -8,9 +8,7 @@ export function AppInfo():Promise<{[key: string]: string}>;
 
 export function OllamaChat(arg1:ollama.ChatRequest,arg2:api.ChatResponseFunc):Promise<void>;
 
-export function OllamaCopy(arg1:ollama.CopyRequest):Promise<void>;
-
-export function OllamaDelete(arg1:ollama.DeleteRequest):Promise<void>;
+export function OllamaDelete(arg1:string):Promise<void>;
 
 export function OllamaEmbed(arg1:ollama.EmbedRequest):Promise<ollama.EmbedResponse>;
 

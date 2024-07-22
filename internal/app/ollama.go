@@ -96,10 +96,6 @@ func (a *App) OllamaListRunning() (*ollama.ProcessResponse, error) {
 	return api.ClientFromConfig().ListRunning(a.ctx)
 }
 
-func (a *App) OllamaCopy(request *ollama.CopyRequest) error {
-	return api.ClientFromConfig().Copy(a.ctx, request)
-}
-
 func (a *App) OllamaGenerate(request *ollama.GenerateRequest, fn api.GenerateResponseFunc) error {
 	return api.ClientFromConfig().Generate(a.ctx, request, fn)
 }

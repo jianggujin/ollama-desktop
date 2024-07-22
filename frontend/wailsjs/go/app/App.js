@@ -10,10 +10,6 @@ export function OllamaChat(arg1, arg2) {
   return window['go']['app']['App']['OllamaChat'](arg1, arg2);
 }
 
-export function OllamaCopy(arg1) {
-  return window['go']['app']['App']['OllamaCopy'](arg1);
-}
-
 export function OllamaDelete(arg1) {
   return window['go']['app']['App']['OllamaDelete'](arg1);
 }

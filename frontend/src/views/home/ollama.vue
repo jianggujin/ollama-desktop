@@ -52,6 +52,7 @@
   })
 
   onMounted(() => {
+    window.ollama = ollama
     runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
     runAsync(OllamaEnvs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
   })

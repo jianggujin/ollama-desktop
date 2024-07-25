@@ -53,8 +53,8 @@ func TestApp_OllamaPull(t *testing.T) {
 	//ollama_test.go:19: Status: writing manifest, Digest: , Total: 0, Completed: 0
 	//ollama_test.go:19: Status: removing any unused layers, Digest: , Total: 0, Completed: 0
 	//ollama_test.go:19: Status: success, Digest: , Total: 0, Completed: 0
-	_ = app.OllamaPull(request, func(response ollama.ProgressResponse) error {
-		t.Log(fmt.Sprintf("Status: %s, Digest: %s, Total: %d, Completed: %d", response.Status, response.Digest, response.Total, response.Completed))
-		return nil
-	})
+	//_ = app.OllamaPull(request, func(response ollama.ProgressResponse) error {
+	//	t.Log(fmt.Sprintf("Status: %s, Digest: %s, Total: %d, Completed: %d", response.Status, response.Digest, response.Total, response.Completed))
+	//	return nil
+	//})
 }

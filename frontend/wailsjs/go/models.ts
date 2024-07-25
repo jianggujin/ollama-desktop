@@ -407,28 +407,6 @@ export namespace ollama {
 		    return a;
 		}
 	}
-	export class ShowRequest {
-	    model: string;
-	    system: string;
-	    template: string;
-	    verbose: boolean;
-	    options: {[key: string]: any};
-	    name: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ShowRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.system = source["system"];
-	        this.template = source["template"];
-	        this.verbose = source["verbose"];
-	        this.options = source["options"];
-	        this.name = source["name"];
-	    }
-	}
 	export class ShowResponse {
 	    license?: string;
 	    modelfile?: string;

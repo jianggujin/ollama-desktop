@@ -28,7 +28,7 @@ export function OllamaListRunning():Promise<ollama.ProcessResponse>;
 
 export function OllamaPull(arg1:string):Promise<void>;
 
-export function OllamaShow(arg1:ollama.ShowRequest):Promise<ollama.ShowResponse>;
+export function OllamaShow(arg1:string):Promise<ollama.ShowResponse>;
 
 export function OllamaVersion():Promise<string>;
 

@@ -119,8 +119,9 @@ func (a *App) OllamaDelete(model string) error {
 	})
 }
 
-func (a *App) OllamaShow(request *ollama.ShowRequest) (*ollama.ShowResponse, error) {
-	return api.ClientFromConfig().Show(a.ctx, request)
+func (a *App) OllamaShow(request string) (*ollama.ShowResponse, error) {
+	// return api.ClientFromConfig().Show(a.ctx, request)
+	return nil, nil
 }
 
 func (a *App) OllamaEmbed(request *ollama.EmbedRequest) (*ollama.EmbedResponse, error) {

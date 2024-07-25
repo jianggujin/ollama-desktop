@@ -49,14 +49,14 @@ func StartApp(server *assetserver.Options) error {
 
 	// Create application with options
 	return wails.Run(&options.App{
-		Title:     "Ollama Desktop",
-		Width:     1024,
-		Height:    768,
-		MinWidth:  1024,
-		MinHeight: 768,
-		//DisableResize: true,
-		//Frameless:     true,
-		AssetServer: server,
+		Title:  "Ollama Desktop",
+		Width:  1024,
+		Height: 768,
+		//MinWidth:  1024,
+		//MinHeight: 768,
+		DisableResize: true,
+		Frameless:     true,
+		AssetServer:   server,
 		//BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:  application.startup,
 		OnDomReady: application.domReady,

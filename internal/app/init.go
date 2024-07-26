@@ -61,6 +61,10 @@ func StartApp(server *assetserver.Options) error {
 		OnStartup:  application.startup,
 		OnDomReady: application.domReady,
 		OnShutdown: application.shutdown,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId:               "d23a62a1-9f3d-4b9d-9c1e-8c1d0c63eafe",
+			OnSecondInstanceLaunch: application.onSecondInstanceLaunch,
+		},
 		Bind: []interface{}{
 			application,
 		},

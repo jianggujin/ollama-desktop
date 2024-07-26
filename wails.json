@@ -1,20 +1,21 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "version": "v0.0.1",
   "name": "ollama-desktop",
   "outputfilename": "ollama-desktop",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
-  "info": {
-    "companyName": "ollama-desktop",
-    "productName": "ollama-desktop",
-    "productVersion": "v0.0.1",
-    "comments": "ollama desktop, powered by jianggujin (https://www.jianggujin.com)"
-  },
   "author": {
     "name": "蒋固金",
     "email": "1013195469@qq.com"
-  }
+  },
+  "info": {
+    "companyName": "Jianggujin",
+    "productName": "ollama-desktop",
+    "productVersion": "0.0.0.1",
+    "copyright": "Copyright Jianggujin",
+    "comments": "Ollama Desktop, powered by Jianggujin (https://www.jianggujin.com)"
+  },
+  "nsisType": "multiple"
 }

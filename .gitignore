@@ -9,3 +9,4 @@ bin
 /frontend/src/auto-imports.d.ts
 /frontend/src/components.d.ts
 /config/ollama-desktop.db
+/build/windows/installer/tmp/

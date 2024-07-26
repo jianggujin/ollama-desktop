@@ -11,6 +11,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 import ElementPlus from 'unplugin-element-plus/vite'
 
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
+
 const pathSrc = path.resolve(__dirname, 'src')
 const pathWailsjs = path.resolve(__dirname, 'wailsjs')
 
@@ -25,6 +27,10 @@ export default defineConfig({
   plugins: [
     vue(),
     ElementPlus(),
+    createSvgIconsPlugin({
+      iconDirs: [path.resolve(process.cwd(), 'src/assets/icons')],
+      symbolId: 'icon-[dir]-[name]'
+    }),
     AutoImport({
       // 自动导入 Vue 相关函数，如：ref, reactive, toRef 等
       imports: ['vue'],

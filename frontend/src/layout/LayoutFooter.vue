@@ -4,11 +4,9 @@
     <i-ep-circle-check-filled v-if="ollamaStore.started"
       style="color: var(--el-color-success);font-size: var(--el-font-size-base);" />
     <i-ep-circle-close-filled v-else style="color: var(--el-color-warning);font-size: var(--el-font-size-base);" />
-    <el-text v-if="ollamaStore.canStart" style="margin-left: 5px;cursor: pointer;" type="primary"
-      @click="startOllamaApp">启动服务</el-text>
+    <el-text v-if="ollamaStore.canStart" style="margin-left: 5px;cursor: pointer;" type="primary" @click="startOllamaApp">启动服务</el-text>
     <el-text style="margin-left: auto;">Ollama Desktop Pwered By</el-text>
-    <el-text style="margin-left: 5px;margin-right: 10px;cursor: pointer;" type="primary"
-      @click="openHomePage">Jianggujin</el-text>
+    <el-text style="margin-left: 5px;margin-right: 10px;cursor: pointer;" type="primary" @click="openHomePage">Jianggujin</el-text>
   </div>
 </template>
 

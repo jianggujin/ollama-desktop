@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 func StartApp(ctx context.Context, client *api.Client) error {
@@ -38,22 +37,25 @@ func StartApp(ctx context.Context, client *api.Client) error {
 	}
 	// log.Printf("XXX attempting to start app %s", appExe)
 
-	cmd_path := "c:\\Windows\\system32\\cmd.exe"
-	cmd := exec.Command(cmd_path, "/c", appExe)
-	// TODO - these hide flags aren't working - still pops up a command window for some reason
-	//cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000, HideWindow: true}
+	// cmdPath := "c:\\Windows\\system32\\cmd.exe"
+	// cmd := exec.Command(cmdPath, "/c", appExe)
+	cmd := exec.Command(appExe)
 
-	// TODO this didn't help either...
-	cmd.Stdin = strings.NewReader("")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	//cmd.SysProcAttr = &syscall.SysProcAttr{
+	//	CreationFlags: 0x08000000,
+	//	HideWindow:    true,
+	//}
+
+	//cmd.Stdin = strings.NewReader("")
+	//cmd.Stdout = os.Stdout
+	//cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("unable to start ollama app %w", err)
 	}
 
-	if cmd.Process != nil {
-		defer cmd.Process.Release() //nolint:errcheck
-	}
+	//if cmd.Process != nil {
+	//	defer cmd.Process.Release() //nolint:errcheck
+	//}
 	return waitForServer(ctx, client)
 }

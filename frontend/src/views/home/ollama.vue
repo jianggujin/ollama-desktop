@@ -30,43 +30,43 @@
 </template>
 
 <script setup>
-  import { ElMessage } from 'element-plus'
-  import { BrowserOpenURL } from "@/runtime/runtime.js"
-  import { OllamaVersion, OllamaEnvs, StartOllama } from "@/go/app/App.js"
-  import { useOllamaStore } from '~/store/ollama.js'
-  import { runAsync, runQuietly } from "~/utils/wrapper.js"
+import { ElMessage } from 'element-plus'
+import { BrowserOpenURL } from '@/runtime/runtime.js'
+import { OllamaVersion, OllamaEnvs, StartOllama } from '@/go/app/App.js'
+import { useOllamaStore } from '~/store/ollama.js'
+import { runAsync, runQuietly } from '~/utils/wrapper.js'
 
-  const ollamaStore = useOllamaStore()
-  const version = ref("")
-  const envs = ref([])
+const ollamaStore = useOllamaStore()
+const version = ref('')
+const envs = ref([])
 
-  const title = computed(() => {
-    if (version.value) {
-      return "Ollama " + version.value
-    }
-    return "Ollama"
-  })
+const title = computed(() => {
+  if (version.value) {
+    return 'Ollama ' + version.value
+  }
+  return 'Ollama'
+})
 
-  const subTitle = computed(() => {
-    return ollamaStore.installed ? "已安装" : "未安装"
-  })
+const subTitle = computed(() => {
+  return ollamaStore.installed ? '已安装' : '未安装'
+})
 
-  onMounted(() => {
+onMounted(() => {
+  runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
+  runAsync(OllamaEnvs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
+})
+
+function startOllamaApp() {
+  runAsync(StartOllama, () => {
+    ElMessage.error('启动Ollama服务成功')
     runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
-    runAsync(OllamaEnvs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
-  })
+  },
+  () => { ElMessage.error('启动Ollama服务失败') })
+}
 
-  function startOllamaApp() {
-    runAsync(StartOllama, () => {
-        ElMessage.error('启动Ollama服务成功')
-        runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
-      },
-      () => { ElMessage.error('启动Ollama服务失败') })
-  }
-
-  function openDownload() {
-    runQuietly(() => { BrowserOpenURL("https://ollama.com/download") })
-  }
+function openDownload() {
+  runQuietly(() => { BrowserOpenURL('https://ollama.com/download') })
+}
 </script>
 
 <style lang="scss" scoped>

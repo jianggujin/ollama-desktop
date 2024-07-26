@@ -1,6 +1,4 @@
-import {
-  ElLoading
-} from 'element-plus'
+import { ElLoading } from 'element-plus'
 window._loading_count = 0
 
 export function showLoading() {

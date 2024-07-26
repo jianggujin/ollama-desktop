@@ -1,53 +1,50 @@
-import {
-  createWebHistory,
-  createRouter
-} from "vue-router";
+import { createWebHistory, createRouter } from 'vue-router'
 import Layout from '~/layout/index.vue'
 import Home from '~/layout/home.vue'
 
 const routes = [{
-    path: '',
-    component: Layout,
-    redirect: '/home',
+  path: '',
+  component: Layout,
+  redirect: '/home',
+  children: [{
+    path: 'home',
+    component: Home,
+    redirect: '/home/ollama',
     children: [{
-        path: 'home',
-        component: Home,
-        redirect: '/home/ollama',
-        children: [{
-          path: 'ollama',
-          component: () => import('~/views/home/ollama.vue')
-        }, {
-          path: 'tags',
-          component: () => import('~/views/home/tags.vue')
-        }, {
-          path: 'ps',
-          component: () => import('~/views/about/index.vue')
-        }, {
-          path: 'local',
-          component: () => import('~/views/about/index.vue')
-        }, {
-          path: 'online',
-          component: () => import('~/views/about/index.vue')
-        }]
-      },
-      {
-        path: 'chat',
-        component: () => import('~/views/about/index.vue')
-      },
-      {
-        path: 'setting',
-        component: () => import('~/views/about/index.vue')
-      },
-      {
-        path: 'about',
-        component: () => import('~/views/about/index.vue')
-      }
-    ]
+      path: 'ollama',
+      component: () => import('~/views/home/ollama.vue')
+    }, {
+      path: 'tags',
+      component: () => import('~/views/home/tags.vue')
+    }, {
+      path: 'ps',
+      component: () => import('~/views/about/index.vue')
+    }, {
+      path: 'local',
+      component: () => import('~/views/about/index.vue')
+    }, {
+      path: 'online',
+      component: () => import('~/views/about/index.vue')
+    }]
   },
   {
-    path: '/:pathMatch(.*)*',
-    redirect: '/home'
+    path: 'chat',
+    component: () => import('~/views/about/index.vue')
   },
+  {
+    path: 'setting',
+    component: () => import('~/views/about/index.vue')
+  },
+  {
+    path: 'about',
+    component: () => import('~/views/about/index.vue')
+  }
+  ]
+},
+{
+  path: '/:pathMatch(.*)*',
+  redirect: '/home'
+}
 ]
 
 const router = createRouter({

@@ -6,8 +6,7 @@
           <li v-for="(menu, mIndex) in menus" :key="mIndex" class="el-sub-menu is-active is-opened">
             <div class="el-sub-menu__title"> {{menu.group}} </div>
             <ul class="el-menu el-menu--inline" style="--el-menu-level: 1;">
-              <li v-for="item in menu.items" :key="item.path" @click="handleSelect(item.path)"
-                :class="{'el-menu-item':true, 'is-active': item.path == key}">
+              <li v-for="item in menu.items" :key="item.path" @click="handleSelect(item.path)" :class="{'el-menu-item':true, 'is-active': item.path == key}">
                 {{item.name}}
               </li>
             </ul>
@@ -21,27 +20,27 @@
   </el-container>
 </template>
 <script setup>
-  import NavHeader from './NavHeader.vue'
-  import { useRoute, useRouter } from 'vue-router'
+import NavHeader from './NavHeader.vue'
+import { useRoute, useRouter } from 'vue-router'
 
-  const menus = ref([{
-    group: "Ollama",
-    items: [{
-      name: "环境信息",
-      path: "/home/ollama",
-    }, {
-      name: "本地模型",
-      path: "/home/tags",
-    }, {
-      name: "在线模型",
-      path: "/home/online",
-    }]
-  }])
+const menus = ref([{
+  group: 'Ollama',
+  items: [{
+    name: '环境信息',
+    path: '/home/ollama'
+  }, {
+    name: '本地模型',
+    path: '/home/tags'
+  }, {
+    name: '在线模型',
+    path: '/home/online'
+  }]
+}])
 
-  const route = useRoute()
-  const router = useRouter()
-  const key = computed(() => { return route.path })
-  const handleSelect = (key) => { router.replace(key) }
+const route = useRoute()
+const router = useRouter()
+const key = computed(() => { return route.path })
+const handleSelect = (key) => { router.replace(key) }
 </script>
 <style lang="scss" scoped>
   .el-container {

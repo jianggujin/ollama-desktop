@@ -12,12 +12,12 @@
   </el-container>
 </template>
 <script setup>
-  import NavHeader from './NavHeader.vue'
-  import LayoutFooter from './LayoutFooter.vue'
-  import { useRoute } from 'vue-router'
+import NavHeader from './NavHeader.vue'
+import LayoutFooter from './LayoutFooter.vue'
+import { useRoute } from 'vue-router'
 
-  const route = useRoute()
-  const key = computed(() => { return route.path })
+const route = useRoute()
+const key = computed(() => { return route.path })
 </script>
 <style lang="scss" scoped>
   .el-container {

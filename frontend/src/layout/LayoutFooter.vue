@@ -13,37 +13,37 @@
 </template>
 
 <script setup>
-  import { ElMessage } from 'element-plus'
-  import { onUnmounted, ref } from "vue";
-  import { BrowserOpenURL, EventsOn, EventsOff } from "@/runtime/runtime.js"
-  import { OllamaHeartbeat, StartOllama } from "@/go/app/App.js"
-  import { runAsync, runQuietly } from "~/utils/wrapper.js"
-  import { useOllamaStore } from '~/store/ollama.js'
+import { ElMessage } from 'element-plus'
+import { onUnmounted, ref } from 'vue'
+import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
+import { OllamaHeartbeat, StartOllama } from '@/go/app/App.js'
+import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { useOllamaStore } from '~/store/ollama.js'
 
-  const ollamaStore = useOllamaStore()
-  onMounted(() => {
-    runQuietly(OllamaHeartbeat)
-    runQuietly(() => {
-      EventsOn("ollamaHeartbeat", (installed, started, canStart) => {
-        ollamaStore.installed = installed
-        ollamaStore.started = started
-        ollamaStore.canStart = canStart
-      })
+const ollamaStore = useOllamaStore()
+onMounted(() => {
+  runQuietly(OllamaHeartbeat)
+  runQuietly(() => {
+    EventsOn('ollamaHeartbeat', (installed, started, canStart) => {
+      ollamaStore.installed = installed
+      ollamaStore.started = started
+      ollamaStore.canStart = canStart
     })
   })
+})
 
-  onUnmounted(() => {
-    runQuietly(() => { EventsOff("ollamaHeartbeat") })
-  })
+onUnmounted(() => {
+  runQuietly(() => { EventsOff('ollamaHeartbeat') })
+})
 
-  function startOllamaApp() {
-    runAsync(StartOllama, () => { ElMessage.success('启动Ollama服务成功') },
-      () => { ElMessage.error('启动Ollama服务失败') })
-  }
+function startOllamaApp() {
+  runAsync(StartOllama, () => { ElMessage.success('启动Ollama服务成功') },
+    () => { ElMessage.error('启动Ollama服务失败') })
+}
 
-  function openHomePage() {
-    runQuietly(() => { BrowserOpenURL("https://www.jianggujin.com") })
-  }
+function openHomePage() {
+  runQuietly(() => { BrowserOpenURL('https://www.jianggujin.com') })
+}
 </script>
 
 <style lang="scss" scoped>

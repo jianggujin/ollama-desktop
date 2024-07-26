@@ -24,37 +24,37 @@
 </template>
 
 <script setup>
-  import { Refresh, Delete } from '@element-plus/icons-vue'
-  import { ElMessage } from 'element-plus'
-  import { OllamaList, OllamaDelete } from "@/go/app/App.js"
-  import { EventsOn } from "@/runtime/runtime.js"
-  import { useOllamaStore } from '~/store/ollama.js'
-  import { runAsync } from "~/utils/wrapper.js"
-  import { humanize } from "~/utils/humanize.js"
+import { Refresh, Delete } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { OllamaList, OllamaDelete } from '@/go/app/App.js'
+import { EventsOn } from '@/runtime/runtime.js'
+import { useOllamaStore } from '~/store/ollama.js'
+import { runAsync } from '~/utils/wrapper.js'
+import { humanize } from '~/utils/humanize.js'
 
-  const ollamaStore = useOllamaStore()
-  const list = ref([])
+const ollamaStore = useOllamaStore()
+const list = ref([])
 
-  function handleRefresh() {
-    runAsync(OllamaList, ({ models }) => {
-      list.value = (models || []).map(item => {
-        item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
-          new Date(item.modified_at));
-        item.formatSize = humanize.filesize(item.size)
-        item.parameterSize = item.details?.parameter_size
-        item.quantizationLevel = item.details?.quantization_level
-        return item
-      })
-    }, _ => { ElMessage.error('获取本地模型列表失败') })
-  }
+function handleRefresh() {
+  runAsync(OllamaList, ({ models }) => {
+    list.value = (models || []).map(item => {
+      item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
+        new Date(item.modified_at))
+      item.formatSize = humanize.filesize(item.size)
+      item.parameterSize = item.details?.parameter_size
+      item.quantizationLevel = item.details?.quantization_level
+      return item
+    })
+  }, _ => { ElMessage.error('获取本地模型列表失败') })
+}
 
-  function handleDelete(row) {
-    runAsync(() => OllamaDelete(row.name), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
-  }
+function handleDelete(row) {
+  runAsync(() => OllamaDelete(row.name), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
+}
 
-  onMounted(() => {
-    handleRefresh()
-  })
+onMounted(() => {
+  handleRefresh()
+})
 </script>
 
 <style lang="scss" scoped>

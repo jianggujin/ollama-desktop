@@ -18,24 +18,24 @@
 </template>
 
 <script setup>
-  import { ElMessage } from 'element-plus'
-  import { AppInfo } from "@/go/app/App.js"
-  import { BrowserOpenURL } from "@/runtime/runtime.js"
-  import { runAsync, runQuietly } from "~/utils/wrapper.js"
+import { ElMessage } from 'element-plus'
+import { AppInfo } from '@/go/app/App.js'
+import { BrowserOpenURL } from '@/runtime/runtime.js'
+import { runAsync, runQuietly } from '~/utils/wrapper.js'
 
-  const appInfo = ref({})
-  const subTitle = computed(() => {
-    return (appInfo.value.Version || "") + " " + (appInfo.value.BuildTime || "")
-  })
-  onMounted(() => {
-    runAsync(AppInfo,
-      data => { appInfo.value = data },
-      _ => { ElMessage.error('获取应用信息失败') })
-  })
+const appInfo = ref({})
+const subTitle = computed(() => {
+  return (appInfo.value.Version || '') + ' ' + (appInfo.value.BuildTime || '')
+})
+onMounted(() => {
+  runAsync(AppInfo,
+    data => { appInfo.value = data },
+    _ => { ElMessage.error('获取应用信息失败') })
+})
 
-  function openHomePage() {
-    runQuietly(() => { BrowserOpenURL("https://www.jianggujin.com") })
-  }
+function openHomePage() {
+  runQuietly(() => { BrowserOpenURL('https://www.jianggujin.com') })
+}
 </script>
 
 <style lang="scss" scoped>

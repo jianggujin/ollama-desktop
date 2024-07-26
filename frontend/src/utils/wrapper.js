@@ -1,4 +1,4 @@
-import { showLoading, closeLoading } from "~/utils/loading.js"
+import { showLoading, closeLoading } from '~/utils/loading.js'
 
 export function runQuietly(fn) {
   if (typeof fn !== 'function') {
@@ -28,6 +28,8 @@ export function runAsync(fn, successCallback, errorCallback) {
     closeLoading()
     try {
       errorCallback(e)
-    } catch {}
+    } catch {
+      //
+    }
   }
 }

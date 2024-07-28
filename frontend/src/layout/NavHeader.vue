@@ -36,11 +36,20 @@ import { isDark, toggleDark } from '~/composables'
 import { Sunny, Moon } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { runQuietly } from '~/utils/wrapper.js'
-import { WindowMinimise, WindowMaximise, WindowUnmaximise, Quit } from '@/runtime/runtime.js'
+import { WindowIsMaximised, WindowMinimise, WindowMaximise, WindowUnmaximise, Quit } from '@/runtime/runtime.js'
 
 const route = useRoute()
 const router = useRouter()
 const isMax = ref(false)
+
+onMounted(() => {
+  runQuietly(() => {
+    WindowIsMaximised().then(data => {
+      isMax.value = data
+    })
+  })
+})
+
 const activeIndex = computed(() => {
   const matched = route.matched || []
   if (matched.length >= 2) {
@@ -56,13 +65,15 @@ function hanldeMinimise() {
 
 function hanldeMaximise() {
   runQuietly(() => {
-    WindowMaximise().then(() => { isMax.value = true })
+    WindowMaximise()
+    isMax.value = true
   })
 }
 
 function hanldeUnmaximise() {
   runQuietly(() => {
-    WindowMaximise().then(() => { isMax.value = false })
+    WindowUnmaximise()
+    isMax.value = false
   })
 }
 

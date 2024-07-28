@@ -5,8 +5,7 @@ import (
 	"sync"
 )
 
-var _once sync.Once
-var downloader *DownLoader
+var downloader = DownLoader{}
 
 type DownloadItem struct {
 	Pull ollama.PullRequest

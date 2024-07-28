@@ -5,35 +5,33 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"ollama-desktop/internal/config"
-	dao2 "ollama-desktop/internal/dao"
 	"ollama-desktop/internal/job"
 	"ollama-desktop/internal/log"
 	"runtime"
 	"strings"
 )
 
-// App struct
+var app App = App{}
+
 type App struct {
-	dao *dao2.DbDao
 	ctx context.Context
 }
 
 func (a *App) startup(ctx context.Context) {
 	log.Info().Ctx(ctx).Msg("Ollama Desktop startup...")
 	a.ctx = ctx
-	a.dao = &dao2.DbDao{}
-	a.dao.Startup(ctx)
-	job.GetSchedule().AddFunc("0/10 * * * * ?", a.OllamaHeartbeat)
+	dao.startup(ctx)
+	job.GetSchedule().AddFunc("0/10 * * * * ?", ollama.Heartbeat)
 }
 
 func (a *App) domReady(ctx context.Context) {
 	log.Info().Ctx(ctx).Msg("Ollama Desktop domReady...")
-	a.OllamaHeartbeat()
+	ollama.Heartbeat()
 }
 
 func (a *App) shutdown(ctx context.Context) {
 	log.Info().Msg("Ollama Desktop shutdown...")
-	a.dao.Shutdown()
+	dao.shutdown()
 	job.GetSchedule().Stop()
 }
 

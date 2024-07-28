@@ -1,10 +1,12 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"ollama-desktop/internal/config"
 	"ollama-desktop/internal/log"
-	"ollama-desktop/internal/ollama"
+	olm "ollama-desktop/internal/ollama"
 	"ollama-desktop/internal/ollama/api"
 	"ollama-desktop/internal/ollama/cmd"
 	"os"
@@ -12,11 +14,17 @@ import (
 	"strings"
 )
 
-func (a *App) OllamaHost() string {
+var ollama = Ollama{}
+
+type Ollama struct {
+	ctx context.Context
+}
+
+func (o *Ollama) Host() string {
 	return config.Config.Ollama.Host.String()
 }
 
-func (a *App) OllamaEnvs() []OllamaEnvVar {
+func (o *Ollama) Envs() []OllamaEnvVar {
 	envs := []OllamaEnvVar{
 		{"OLLAMA_DEBUG", cleanEnvValue("OLLAMA_DEBUG"), "Show additional debug information (e.g. OLLAMA_DEBUG=1)"},
 		{"OLLAMA_FLASH_ATTENTION", cleanEnvValue(""), "Enabled flash attention"},
@@ -57,77 +65,97 @@ type OllamaEnvVar struct {
 	Description string
 }
 
-func (a *App) OllamaVersion() (string, error) {
-	return api.ClientFromConfig().Version(a.ctx)
+func (o *Ollama) Version() (string, error) {
+	return api.ClientFromConfig().Version(o.ctx)
 }
 
-func (a *App) OllamaHeartbeat() {
+func (o *Ollama) Heartbeat() {
 	var installed, started bool
 	client := api.ClientFromConfig()
 
-	started = client.Heartbeat(a.ctx) == nil
+	started = client.Heartbeat(o.ctx) == nil
 
 	if !started {
-		installed, _ = cmd.CheckInstalled(a.ctx)
+		installed, _ = cmd.CheckInstalled(o.ctx)
 	} else {
 		installed = true
 	}
 	os := gorun.GOOS
-	runtime.EventsEmit(a.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"))
+	runtime.EventsEmit(o.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"))
 }
 
-func (a *App) StartOllama() error {
+func (o *Ollama) Start() error {
 	client := api.ClientFromConfig()
 
-	err := cmd.StartApp(a.ctx, client)
+	err := cmd.StartApp(o.ctx, client)
 	if err != nil {
 		log.Error().Err(err).Msg("Ollama StartApp")
 		return err
 	}
-	a.OllamaHeartbeat()
+	o.Heartbeat()
 	return nil
 }
 
-func (a *App) OllamaList() (*ollama.ListResponse, error) {
-	return api.ClientFromConfig().List(a.ctx)
+func (o *Ollama) List() (*olm.ListResponse, error) {
+	return api.ClientFromConfig().List(o.ctx)
 }
 
-func (a *App) OllamaListRunning() (*ollama.ProcessResponse, error) {
-	return api.ClientFromConfig().ListRunning(a.ctx)
+func (o *Ollama) ListRunning() (*olm.ProcessResponse, error) {
+	return api.ClientFromConfig().ListRunning(o.ctx)
 }
 
-func (a *App) OllamaGenerate(request *ollama.GenerateRequest, fn api.GenerateResponseFunc) error {
-	return api.ClientFromConfig().Generate(a.ctx, request, fn)
-}
-
-func (a *App) OllamaChat(request *ollama.ChatRequest, fn api.ChatResponseFunc) error {
-	return api.ClientFromConfig().Chat(a.ctx, request, fn)
-}
-
-func (a *App) OllamaPull(model string) error {
-	return api.ClientFromConfig().Pull(a.ctx, &ollama.PullRequest{
-		Model: model,
-	}, func(response ollama.ProgressResponse) error {
-		runtime.EventsEmit(a.ctx, "ollamaPull", response)
+func (o *Ollama) Generate(requestId, requestStr string) error {
+	request := &olm.GenerateRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	go api.ClientFromConfig().Generate(o.ctx, request, func(response olm.GenerateResponse) error {
+		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
+	return nil
 }
 
-func (a *App) OllamaDelete(model string) error {
-	return api.ClientFromConfig().Delete(a.ctx, &ollama.DeleteRequest{
-		Model: model,
+func (o *Ollama) Chat(requestId, requestStr string) error {
+	request := &olm.ChatRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	go api.ClientFromConfig().Chat(o.ctx, request, func(response olm.ChatResponse) error {
+		runtime.EventsEmit(app.ctx, requestId, response)
+		return nil
 	})
+	return nil
 }
 
-func (a *App) OllamaShow(request string) (*ollama.ShowResponse, error) {
-	// return api.ClientFromConfig().Show(a.ctx, request)
-	return nil, nil
+func (o *Ollama) Delete(requestStr string) error {
+	request := &olm.DeleteRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	return api.ClientFromConfig().Delete(o.ctx, request)
 }
 
-func (a *App) OllamaEmbed(request *ollama.EmbedRequest) (*ollama.EmbedResponse, error) {
-	return api.ClientFromConfig().Embed(a.ctx, request)
+func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
+	request := &olm.ShowRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+	return api.ClientFromConfig().Show(o.ctx, request)
 }
 
-func (a *App) OllamaEmbeddings(request *ollama.EmbeddingRequest) (*ollama.EmbeddingResponse, error) {
-	return api.ClientFromConfig().Embeddings(a.ctx, request)
+func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
+	request := &olm.EmbedRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+	return api.ClientFromConfig().Embed(o.ctx, request)
+}
+
+func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
+	request := &olm.EmbeddingRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+	return api.ClientFromConfig().Embeddings(o.ctx, request)
 }

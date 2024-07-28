@@ -35,9 +35,6 @@ func (l *logger) Fatal(message string) {
 }
 
 func StartApp(server *assetserver.Options) error {
-	// Create an instance of the app structure
-	application := &App{}
-
 	level := config.Config.Logging.Level
 	if level == "warn" {
 		level = "warning"
@@ -54,19 +51,22 @@ func StartApp(server *assetserver.Options) error {
 		Height: 768,
 		//MinWidth:  1024,
 		//MinHeight: 768,
-		DisableResize: true,
-		Frameless:     true,
-		AssetServer:   server,
+		//DisableResize: true,
+		Frameless:   true,
+		AssetServer: server,
 		//BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:  application.startup,
-		OnDomReady: application.domReady,
-		OnShutdown: application.shutdown,
+		OnStartup:  app.startup,
+		OnDomReady: app.domReady,
+		OnShutdown: app.shutdown,
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId:               "d23a62a1-9f3d-4b9d-9c1e-8c1d0c63eafe",
-			OnSecondInstanceLaunch: application.onSecondInstanceLaunch,
+			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
 		Bind: []interface{}{
-			application,
+			&app,
+			&dao,
+			&downloader,
+			&ollama,
 		},
 		Logger:             &logger{},
 		LogLevelProduction: ll,

@@ -159,3 +159,47 @@ func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
 	}
 	return api.ClientFromConfig().Embeddings(o.ctx, request)
 }
+
+func (o *Ollama) Pull(requestId, requestStr string) error {
+	request := &olm.PullRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	go api.ClientFromConfig().Pull(o.ctx, request, func(response olm.ProgressResponse) error {
+		runtime.EventsEmit(app.ctx, requestId, response)
+		return nil
+	})
+	return nil
+}
+
+func (o *Ollama) Push(requestId, requestStr string) error {
+	request := &olm.PushRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	go api.ClientFromConfig().Push(o.ctx, request, func(response olm.ProgressResponse) error {
+		runtime.EventsEmit(app.ctx, requestId, response)
+		return nil
+	})
+	return nil
+}
+
+func (o *Ollama) Create(requestId, requestStr string) error {
+	request := &olm.CreateRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	go api.ClientFromConfig().Create(o.ctx, request, func(response olm.ProgressResponse) error {
+		runtime.EventsEmit(app.ctx, requestId, response)
+		return nil
+	})
+	return nil
+}
+
+func (o *Ollama) Copy(requestStr string) error {
+	request := &olm.CopyRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return err
+	}
+	return api.ClientFromConfig().Copy(o.ctx, request)
+}

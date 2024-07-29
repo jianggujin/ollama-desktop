@@ -3,16 +3,15 @@ package app
 import (
 	"context"
 	"fmt"
-	"ollama-desktop/internal/ollama"
+	olm "ollama-desktop/internal/ollama"
 	"testing"
 )
 
 func TestApp_OllamaPull(t *testing.T) {
 	app := &App{
-		dao: nil,
 		ctx: context.Background(),
 	}
-	request := &ollama.PullRequest{
+	request := &olm.PullRequest{
 		Model: "qwen2:0.5b",
 	}
 

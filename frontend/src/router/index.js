@@ -17,14 +17,8 @@ const routes = [{
       path: 'tags',
       component: () => import('~/views/home/tags.vue')
     }, {
-      path: 'ps',
-      component: () => import('~/views/about/index.vue')
-    }, {
-      path: 'local',
-      component: () => import('~/views/about/index.vue')
-    }, {
       path: 'online',
-      component: () => import('~/views/about/index.vue')
+      component: () => import('~/views/home/online.vue')
     }]
   },
   {

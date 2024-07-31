@@ -14,7 +14,7 @@
         </ul>
       </el-scrollbar>
     </el-aside>
-    <el-main>
+    <el-main id="loading-wrapper">
       <router-view :key="key" />
     </el-main>
   </el-container>

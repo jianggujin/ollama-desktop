@@ -26,8 +26,7 @@
 <script setup>
 import { Refresh, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { OllamaList, OllamaDelete } from '@/go/app/App.js'
-import { EventsOn } from '@/runtime/runtime.js'
+import { List, Delete as deleteOllamaModel } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
 import { runAsync } from '~/utils/wrapper.js'
 import { humanize } from '~/utils/humanize.js'
@@ -36,7 +35,7 @@ const ollamaStore = useOllamaStore()
 const list = ref([])
 
 function handleRefresh() {
-  runAsync(OllamaList, ({ models }) => {
+  runAsync(List, ({ models }) => {
     list.value = (models || []).map(item => {
       item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
         new Date(item.modified_at))
@@ -49,7 +48,7 @@ function handleRefresh() {
 }
 
 function handleDelete(row) {
-  runAsync(() => OllamaDelete(row.name), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
+  runAsync(() => deleteOllamaModel(row.name), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
 }
 
 onMounted(() => {

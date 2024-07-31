@@ -14,13 +14,13 @@
 import { ElMessage } from 'element-plus'
 import { onUnmounted, ref } from 'vue'
 import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
-import { OllamaHeartbeat, StartOllama } from '@/go/app/App.js'
+import { Heartbeat, Start } from '@/go/app/Ollama.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
 import { useOllamaStore } from '~/store/ollama.js'
 
 const ollamaStore = useOllamaStore()
 onMounted(() => {
-  runQuietly(OllamaHeartbeat)
+  runQuietly(Heartbeat)
   runQuietly(() => {
     EventsOn('ollamaHeartbeat', (installed, started, canStart) => {
       ollamaStore.installed = installed
@@ -35,7 +35,7 @@ onUnmounted(() => {
 })
 
 function startOllamaApp() {
-  runAsync(StartOllama, () => { ElMessage.success('启动Ollama服务成功') },
+  runAsync(Start, () => { ElMessage.success('启动Ollama服务成功') },
     () => { ElMessage.error('启动Ollama服务失败') })
 }
 

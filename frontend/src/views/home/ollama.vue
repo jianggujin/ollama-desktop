@@ -32,7 +32,7 @@
 <script setup>
 import { ElMessage } from 'element-plus'
 import { BrowserOpenURL } from '@/runtime/runtime.js'
-import { OllamaVersion, OllamaEnvs, StartOllama } from '@/go/app/App.js'
+import { Version, Envs, Start } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
 
@@ -52,14 +52,14 @@ const subTitle = computed(() => {
 })
 
 onMounted(() => {
-  runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
-  runAsync(OllamaEnvs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
+  runAsync(Version, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
+  runAsync(Envs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
 })
 
 function startOllamaApp() {
-  runAsync(StartOllama, () => {
+  runAsync(Start, () => {
     ElMessage.error('启动Ollama服务成功')
-    runAsync(OllamaVersion, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
+    runAsync(Version, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
   },
   () => { ElMessage.error('启动Ollama服务失败') })
 }

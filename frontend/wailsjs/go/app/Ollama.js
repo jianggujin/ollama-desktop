@@ -42,6 +42,10 @@ export function Host() {
   return window['go']['app']['Ollama']['Host']();
 }
 
+export function LibraryOnline(arg1) {
+  return window['go']['app']['Ollama']['LibraryOnline'](arg1);
+}
+
 export function List() {
   return window['go']['app']['Ollama']['List']();
 }
@@ -56,6 +60,10 @@ export function Pull(arg1, arg2) {
 
 export function Push(arg1, arg2) {
   return window['go']['app']['Ollama']['Push'](arg1, arg2);
+}
+
+export function SearchOnline(arg1) {
+  return window['go']['app']['Ollama']['SearchOnline'](arg1);
 }
 
 export function Show(arg1) {

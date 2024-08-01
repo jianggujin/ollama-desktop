@@ -23,6 +23,8 @@ export function Heartbeat():Promise<void>;
 
 export function Host():Promise<string>;
 
+export function LibraryOnline(arg1:string):Promise<Array<ollama.ModelInfo>>;
+
 export function List():Promise<ollama.ListResponse>;
 
 export function ListRunning():Promise<ollama.ProcessResponse>;
@@ -30,6 +32,8 @@ export function ListRunning():Promise<ollama.ProcessResponse>;
 export function Pull(arg1:string,arg2:string):Promise<void>;
 
 export function Push(arg1:string,arg2:string):Promise<void>;
+
+export function SearchOnline(arg1:string):Promise<ollama.SearchResponse>;
 
 export function Show(arg1:string):Promise<ollama.ShowResponse>;
 

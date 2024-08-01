@@ -8,6 +8,7 @@ import (
 	olm "ollama-desktop/internal/ollama"
 	"ollama-desktop/internal/ollama/api"
 	"ollama-desktop/internal/ollama/cmd"
+	ollama2 "ollama-desktop/internal/ollama/ollama"
 	"os"
 	gorun "runtime"
 	"strings"
@@ -200,4 +201,20 @@ func (o *Ollama) Copy(requestStr string) error {
 		return err
 	}
 	return api.ClientFromConfig().Copy(app.ctx, request)
+}
+
+func (o *Ollama) SearchOnline(requestStr string) (*olm.SearchResponse, error) {
+	request := &olm.SearchRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+	return ollama2.NewClient().Search(app.ctx, request)
+}
+
+func (o *Ollama) LibraryOnline(requestStr string) ([]*olm.ModelInfo, error) {
+	request := &olm.LibraryRequest{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+	return ollama2.NewClient().Library(app.ctx, request)
 }

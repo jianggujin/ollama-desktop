@@ -5,12 +5,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
-	"golang.org/x/tools/go/ssa/testdata/src/fmt"
 	dao2 "ollama-desktop/internal/dao"
 	ollama2 "ollama-desktop/internal/ollama"
 	"strings"
 	"time"
+)
+
+const (
+	refTypeQuestion      = "question"
+	refTypeAnswer        = "answer"
+	messageRoleUser      = "user"
+	messageRoleSystem    = "system"
+	messageRoleAssistant = "assistant"
 )
 
 var dao = Dao{}
@@ -66,7 +74,7 @@ func (d *Dao) CreateSession(requestStr string) (*Session, error) {
 	if err := json.Unmarshal([]byte(requestStr), session); err != nil {
 		return nil, err
 	}
-	session.Id = uuid.New().String()
+	session.Id = uuid.NewString()
 	session.CreatedAt = time.Now()
 	session.UpdatedAt = time.Now()
 
@@ -84,7 +92,7 @@ func (d *Dao) CreateSession(requestStr string) (*Session, error) {
 }
 
 func (d *Dao) DeleteSession(id string) (*Session, error) {
-	session, err := d.FindSession(id)
+	session, err := d.findSession(id)
 	if err != nil {
 		return nil, err
 	}
@@ -95,22 +103,22 @@ func (d *Dao) DeleteSession(id string) (*Session, error) {
 	}
 	err = func() error {
 		// 删除会话
-		sqlStr := "delete t_session where id = ?"
+		sqlStr := "delete from t_session where id = ?"
 		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
 			return err
 		}
 		// 删除问题
-		sqlStr = "delete t_question where session_id = ?"
+		sqlStr = "delete from t_question where session_id = ?"
 		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
 			return err
 		}
 		// 删除回答
-		sqlStr = "delete t_answer where session_id = ?"
+		sqlStr = "delete from t_answer where session_id = ?"
 		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
 			return err
 		}
 		// 删除图片
-		sqlStr = "delete t_image where session_id = ?"
+		sqlStr = "delete from t_image where session_id = ?"
 		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
 			return err
 		}
@@ -127,7 +135,7 @@ func (d *Dao) DeleteSession(id string) (*Session, error) {
 	return session, err
 }
 
-func (d *Dao) FindSession(id string) (*Session, error) {
+func (d *Dao) findSession(id string) (*Session, error) {
 	sessions, err := d.Sessions(false)
 	if err != nil {
 		return nil, err
@@ -152,7 +160,7 @@ func (d *Dao) scanQuestion(rows *sql.Rows) (*Question, error) {
 	return question, nil
 }
 
-func (d *Dao) FindQuestion(id string) (*Question, error) {
+func (d *Dao) findQuestion(id string) (*Question, error) {
 	sqlStr := `select id, session_id, question_content, answer_count, message_type, has_image, created_at, updated_at
             from t_question where id = ?`
 	rows, err := d.dao.GetDriver().Query(app.ctx, sqlStr, id)
@@ -166,7 +174,7 @@ func (d *Dao) FindQuestion(id string) (*Question, error) {
 	return nil, errors.New("question not exists")
 }
 
-func (d *Dao) CombineHistoryMessages(session *Session, skipLast bool) ([]ollama2.Message, error) {
+func (d *Dao) combineHistoryMessages(session *Session, skipLast bool) ([]ollama2.Message, error) {
 	if session.MessageHistoryCount < 1 {
 		return nil, nil
 	}
@@ -234,14 +242,14 @@ func (d *Dao) CombineHistoryMessages(session *Session, skipLast bool) ([]ollama2
 	for _, message := range questions {
 		var images []ollama2.ImageData
 		if message.HasImage {
-			images, err = d.FindImages(message.Id, "question")
+			images, err = d.findImages(message.Id, refTypeQuestion)
 			if err != nil {
 				return nil, err
 			}
 		}
 		// 问题
 		ollamaMessages = append(ollamaMessages, ollama2.Message{
-			Role:    "user",
+			Role:    messageRoleUser,
 			Content: message.QuestionContent,
 			Images:  images,
 		})
@@ -253,7 +261,7 @@ func (d *Dao) CombineHistoryMessages(session *Session, skipLast bool) ([]ollama2
 		}
 		images = nil
 		if answer.HasImage {
-			images, err = d.FindImages(answer.Id, "answer")
+			images, err = d.findImages(answer.Id, refTypeAnswer)
 			if err != nil {
 				return nil, err
 			}
@@ -267,7 +275,7 @@ func (d *Dao) CombineHistoryMessages(session *Session, skipLast bool) ([]ollama2
 	return ollamaMessages, nil
 }
 
-func (d *Dao) FindImages(refId, refType string) ([]ollama2.ImageData, error) {
+func (d *Dao) findImages(refId, refType string) ([]ollama2.ImageData, error) {
 	sqlStr := fmt.Sprintf(`select id, session_id, ref_id, ref_type, image_data, created_at, updated_at
             from t_image
             where ref_id = ? and ref_type = ?
@@ -290,7 +298,7 @@ func (d *Dao) FindImages(refId, refType string) ([]ollama2.ImageData, error) {
 	return images, nil
 }
 
-func (d *Dao) CreateAnswer(question *Question, answer *Answer, questionImages, answerImages []ollama2.ImageData, isNew bool) error {
+func (d *Dao) createAnswer(question *Question, answer *Answer, questionImages, answerImages []ollama2.ImageData, isNew bool) error {
 	tx, err := d.dao.GetDb().Begin()
 	if err == nil {
 		return err
@@ -300,16 +308,62 @@ func (d *Dao) CreateAnswer(question *Question, answer *Answer, questionImages, a
 			// 保存问题
 			sqlStr := `insert into t_question(id, session_id, question_content, answer_count, message_type, has_image, created_at, updated_at) 
                        values(?, ?, ?, ?, ?, ?, ?, ?)`
+			if _, err := tx.ExecContext(app.ctx, sqlStr, question.Id, question.SessionId, question.QuestionContent,
+				question.AnswerCount, question.MessageType, question.HasImage, question.CreatedAt, question.UpdatedAt); err != nil {
+				return err
+			}
+			if question.HasImage {
+				sqlStr := `insert into t_image(id, session_id, ref_id, ref_type, image_data, created_at, updated_at) 
+                       values(?, ?, ?, ?, ?, ?, ?, ?)`
+				stm, err := tx.PrepareContext(app.ctx, sqlStr)
+				if err != nil {
+					return err
+				}
+				defer stm.Close()
+				for _, image := range questionImages {
+					if _, err := stm.ExecContext(app.ctx, uuid.NewString(), question.SessionId, question.Id,
+						refTypeQuestion, image, question.CreatedAt, question.CreatedAt); err != nil {
+						return err
+					}
+				}
+			}
+
 		} else {
 			// 修改问题
-			sqlStr := `update t_question set answer_count = answer_count + 1, has_image = ?, updated_at = ? 
-                       where id = ?`
+			sqlStr := `update t_question set answer_count = ?, updated_at = ? where id = ?`
+			if _, err := tx.ExecContext(app.ctx, sqlStr, question.AnswerCount, question.UpdatedAt, question.Id); err != nil {
+				return err
+			}
+			sqlStr = `update t_answer set is_last = 0, updated_at = ? where question_id = ?`
+			if _, err := tx.ExecContext(app.ctx, sqlStr, question.UpdatedAt, question.Id); err != nil {
+				return err
+			}
 		}
 		// 保存答案
-		// 保存图片
-		// 删除问题
-		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
+		sqlStr := `insert into t_answer(id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
+                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason, is_last,
+                 is_success, has_image, created_at, updated_at) 
+                       values(?, ?, ?, ?, ?, ?, ?, ?)`
+		if _, err := tx.ExecContext(app.ctx, sqlStr, answer.Id, answer.SessionId, answer.QuestionId,
+			answer.AnswerContent, answer.MessageRole, answer.TotalDuration, answer.LoadDuration, answer.PromptEvalCount,
+			answer.PromptEvalDuration, answer.EvalCount, answer.EvalDuration, answer.DoneReason, answer.IsLast,
+			answer.IsSuccess, answer.HasImage, answer.CreatedAt, answer.UpdatedAt); err != nil {
 			return err
+		}
+		if answer.HasImage {
+			sqlStr := `insert into t_image(id, session_id, ref_id, ref_type, image_data, created_at, updated_at) 
+                       values(?, ?, ?, ?, ?, ?, ?, ?)`
+			stm, err := tx.PrepareContext(app.ctx, sqlStr)
+			if err != nil {
+				return err
+			}
+			defer stm.Close()
+			for _, image := range answerImages {
+				if _, err := stm.ExecContext(app.ctx, uuid.NewString(), answer.SessionId, answer.Id,
+					refTypeAnswer, image, answer.CreatedAt, answer.CreatedAt); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	}()

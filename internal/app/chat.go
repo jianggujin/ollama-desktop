@@ -21,43 +21,52 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	session, err := dao.FindSession(request.SessionId)
+	session, err := dao.findSession(request.SessionId)
 	if err != nil {
 		return nil, err
 	}
 	isNew := true
 	var question *Question
+	var images []olm.ImageData
 	// 存在消息编号，查找历史消息
 	if request.QuestionId != "" {
-		question, err = dao.FindQuestion(request.QuestionId)
+		question, err = dao.findQuestion(request.QuestionId)
 		if err != nil {
 			return nil, err
 		}
+		if question.HasImage {
+			images, err = dao.findImages(question.Id, refTypeQuestion)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		isNew = false
 	} else {
+		images, err = c.convertImageDatas(request.Images)
+		if err != nil {
+			return nil, err
+		}
 		question = &Question{
-			Id:              uuid.New().String(),
+			Id:              uuid.NewString(),
 			SessionId:       session.Id,
 			QuestionContent: request.Content,
 			AnswerCount:     0,
 			MessageType:     "chat",
-			HasImage:        false,
+			HasImage:        len(images) > 0,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
 	}
 
 	answer := &Answer{
-		Id:         uuid.New().String(),
+		Id:         uuid.NewString(),
 		SessionId:  session.Id,
 		QuestionId: question.Id,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
-	images, err := c.convertImageDatas(request.Images)
-	if err != nil {
-		return nil, err
-	}
+
 	go c.chat(session, question, answer, images, isNew)
 	return &ConversationResponse{SessionId: session.Id, QuestionId: question.Id, AnswerId: answer.Id}, nil
 }
@@ -79,19 +88,19 @@ func (c *Chat) convertImageDatas(images []string) ([]olm.ImageData, error) {
 
 func (c *Chat) chat(session *Session, question *Question, answer *Answer, images []olm.ImageData, isNew bool) {
 	var answerImages []olm.ImageData
-	defer dao.CreateAnswer(question, answer, images, answerImages, isNew)
+	defer dao.createAnswer(question, answer, images, answerImages, isNew)
 	var keepAlive *olm.Duration
 	if session.KeepAlive > 0 {
 		keepAlive = &olm.Duration{
 			Duration: session.KeepAlive,
 		}
 	}
-	messages, err := dao.CombineHistoryMessages(session, !isNew)
+	messages, err := dao.combineHistoryMessages(session, !isNew)
 	if err != nil {
 		runtime.EventsEmit(app.ctx, answer.Id, nil, err)
 	}
 	messages = append(messages, olm.Message{
-		Role:    "user",
+		Role:    messageRoleUser,
 		Content: question.QuestionContent,
 		Images:  images,
 	})
@@ -123,6 +132,7 @@ func (c *Chat) chat(session *Session, question *Question, answer *Answer, images
 			answer.PromptEvalDuration = metrics.PromptEvalDuration
 			answer.EvalCount = metrics.EvalCount
 			answer.EvalDuration = metrics.EvalDuration
+			question.AnswerCount = question.AnswerCount + 1
 		}
 		runtime.EventsEmit(app.ctx, answer.Id, response)
 		return nil

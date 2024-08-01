@@ -2,7 +2,7 @@
   <div id="loading-wrapper" style="height: 100%;">
     <el-scrollbar ref="scrollbar">
       <div style="display: flex;align-items: center;justify-content: center;margin-top: 50px;">
-        <el-input v-model="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" />
+        <el-input v-model="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" maxlength="100"/>
       </div>
       <div style="margin-top: 15px;margin: 20px auto 0 auto;width: 80%;display: flex;align-items: center;justify-content: space-between;">
         <el-radio-group v-model="searchForm.searchType">
@@ -25,9 +25,7 @@
       <div style="margin: 20px auto 0 auto;width: 80%;">
         <el-empty v-if="!list.length" />
         <div class="model-item" v-for="(item, index) in list" :key="index">
-          <!--模型名称-->
-          <!-- <div><el-text size="large" style="font-weight: 500;font-size: 1.5rem;">llama3.1</el-text></div> -->
-          <div><el-link style="font-weight: 500;font-size: 1.5rem;">{{ item.model }}</el-link></div>
+          <div><el-link style="font-weight: 500;font-size: 1.5rem;">{{ item.name }}</el-link></div>
           <div style="margin-top: 10px;"><el-text style="">{{ item.description }}</el-text></div>
           <div style="margin-top: 10px;" v-if="item.tags?.length">
             <el-tag v-for="(tag, ti) in item.tags" :key="ti" :type="tas == 'Embedding' || tas == 'Vision' || tag == 'Tools' || tag == 'Code' ? 'success' : 'primary'">{{ tag }}</el-tag>
@@ -45,10 +43,12 @@
       <el-pagination v-show="searchForm.searchType == 'function'"
         style="margin-top: 40px;display: flex;justify-content: center;margin-bottom: 40px;"
         hide-on-single-page
-        :page-size="20"
-        :pager-count="11"
+        background
+        :current-page="pagination.page"
+        :page-count="pagination.pageCount"
+        size="smal"
         layout="prev, pager, next"
-        :total="1000"
+        @current-change="changeCurrentPage"
         @change="$refs.scrollbar.setScrollTop(0)"
       />
     </el-scrollbar>
@@ -57,35 +57,64 @@
 
 <script setup>
 import { Search } from '@element-plus/icons-vue'
-
+import { SearchOnline, LibraryOnline } from '@/go/app/Ollama.js'
 import { ElMessage } from 'element-plus'
 import { runAsync } from '~/utils/wrapper.js'
 
+const pagination = ref({
+  page: 1,
+  pageCount: 0
+})
+
 const searchForm = ref({
+  q: '',
   searchType: 'sort',
   sort: 'featured',
   c: ''
 })
 
-const list = ref([{
-  model: 'llama3.1',
-  description: 'Llama 3.1 is a new state-of-the-art model from Meta available in 8B, 70B and 405B parameter sizes.',
-  tags: ['Tools', '8B', '70B'],
-  pullCount: '577.1K',
-  tagCount: 36,
-  updateTime: '6 days ago'
-}])
+const list = ref([])
 
-watch(searchForm, newValue => {
-  console.log(newValue.searchType)
-}, {
+function changeCurrentPage(page) {
+  handleSearch(page)
+}
+
+function handleSearch(page) {
+  if (searchForm.value.searchType === 'sort') {
+    runAsync(() => LibraryOnline(JSON.stringify({ q: searchForm.value.q, sort: searchForm.value.sort })), data => { list.value = data }, _ => {
+      list.value = []
+      ElMessage.error('查询模型失败')
+    })
+  } else if (searchForm.value.searchType === 'function') {
+    runAsync(() => SearchOnline(JSON.stringify({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c })), data => {
+      pagination.value.page = data.page
+      pagination.value.pageCount = data.pageCount
+      list.value = data.items
+    }, _ => {
+      list.value = []
+      ElMessage.error('查询模型失败')
+    })
+  }
+}
+
+let timeout
+function lazySearch() {
+  if (timeout) {
+    clearTimeout(timeout)
+    timeout = null
+  }
+
+  timeout = setTimeout(handleSearch, 300)
+}
+
+watch(searchForm, lazySearch, {
   deep: true,
   immediate: true
 })
 
-onMounted(() => {
-  // runAsync(Envs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
-})
+// onMounted(() => {
+//   handleSearch()
+// })
 </script>
 
 <style lang="scss" scoped>

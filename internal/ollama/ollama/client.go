@@ -33,7 +33,7 @@ func checkError(resp *http.Response, body []byte) error {
 	return ollama.StatusError{StatusCode: resp.StatusCode, Status: resp.Status, ErrorMessage: string(body)}
 }
 
-func NewClient() (*Client, error) {
+func NewClient() *Client {
 	base, _ := url.Parse("https://ollama.com")
 	var proxy func(*http.Request) (*url.URL, error)
 	if config.Config.Proxy != nil {
@@ -50,7 +50,7 @@ func NewClient() (*Client, error) {
 				},
 			},
 		},
-	}, nil
+	}
 }
 
 func (c *Client) do(ctx context.Context, path string, reqData map[string]string) ([]byte, error) {
@@ -157,7 +157,7 @@ func (c *Client) SearchPreview(ctx context.Context, q string) ([]*ollama.SimpleM
 	return list, nil
 }
 
-func (c *Client) Search(ctx context.Context, request ollama.SearchRequest) (*ollama.SearchResponse, error) {
+func (c *Client) Search(ctx context.Context, request *ollama.SearchRequest) (*ollama.SearchResponse, error) {
 	if request.P <= 0 {
 		request.P = 1
 	}
@@ -213,7 +213,7 @@ func (c *Client) Search(ctx context.Context, request ollama.SearchRequest) (*oll
 	}, nil
 }
 
-func (c *Client) Library(ctx context.Context, request ollama.LibraryRequest) ([]*ollama.ModelInfo, error) {
+func (c *Client) Library(ctx context.Context, request *ollama.LibraryRequest) ([]*ollama.ModelInfo, error) {
 	if request.Sort == "" {
 		request.Sort = "featured"
 	}

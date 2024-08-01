@@ -58,7 +58,7 @@ onMounted(() => {
 
 function startOllamaApp() {
   runAsync(Start, () => {
-    ElMessage.error('启动Ollama服务成功')
+    ElMessage.success('启动Ollama服务成功')
     runAsync(Version, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
   },
   () => { ElMessage.error('启动Ollama服务失败') })

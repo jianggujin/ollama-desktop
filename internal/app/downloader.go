@@ -13,10 +13,10 @@ import (
 var downloader = DownLoader{}
 
 const (
-	pull_wait    = 1
-	pulling      = 2
-	pull_success = 3
-	pull_error   = -1
+	pullWait    = 1
+	pulling     = 2
+	pullSuccess = 3
+	pullError   = -1
 )
 
 type DownloadItem struct {
@@ -67,7 +67,7 @@ func (d *DownLoader) Pull(requestStr string) error {
 func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 	ctx, cancel := context.WithCancel(app.ctx)
 	item.cancel = cancel
-	d.eventsEmit(request.Model, pull_wait)
+	d.eventsEmit(request.Model, pullWait, item)
 	err := api.ClientFromConfig().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
 		d.lock.Lock()
 		defer d.lock.Unlock()
@@ -81,21 +81,21 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 			status = response.Status
 			item.Names = append(item.Names, status)
 		}
-		d.eventsEmit(request.Model, pulling, &response)
+		d.eventsEmit(request.Model, pulling, item)
 		return nil
 	})
 	if err != nil {
-		d.eventsEmit(request.Model, pull_error)
+		d.eventsEmit(request.Model, pullError, item)
 	} else {
-		d.eventsEmit(request.Model, pull_success)
+		d.eventsEmit(request.Model, pullSuccess, item)
 	}
 	delete(d.tasks, request.Model)
 }
 
-func (d *DownLoader) eventsEmit(model string, optionalData ...interface{}) {
+func (d *DownLoader) eventsEmit(model string, status int, item *DownloadItem) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
-	runtime.EventsEmit(app.ctx, "pull_"+model, optionalData...)
+	runtime.EventsEmit(app.ctx, "pull_"+model, status, item)
 }
 
 func (d *DownLoader) Cancel(model string) {

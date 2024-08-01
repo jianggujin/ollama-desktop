@@ -1,5 +1,41 @@
 export namespace app {
 	
+	export class DownloadItem {
+	    model: string;
+	    insecure?: boolean;
+	    names: string[];
+	    bars: {[key: string]: ollama.ProgressResponse};
+	
+	    static createFrom(source: any = {}) {
+	        return new DownloadItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.insecure = source["insecure"];
+	        this.names = source["names"];
+	        this.bars = this.convertValues(source["bars"], ollama.ProgressResponse, true);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class OllamaEnvVar {
 	
 	
@@ -17,114 +53,6 @@ export namespace app {
 
 export namespace ollama {
 	
-	export class Duration {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new Duration(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
-	    }
-	}
-	export class Message {
-	    role: string;
-	    content: string;
-	    images?: number[][];
-	
-	    static createFrom(source: any = {}) {
-	        return new Message(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.role = source["role"];
-	        this.content = source["content"];
-	        this.images = source["images"];
-	    }
-	}
-	export class ChatRequest {
-	    model: string;
-	    messages: Message[];
-	    stream?: boolean;
-	    format: string;
-	    // Go type: Duration
-	    keep_alive?: any;
-	    options: {[key: string]: any};
-	
-	    static createFrom(source: any = {}) {
-	        return new ChatRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.messages = this.convertValues(source["messages"], Message);
-	        this.stream = source["stream"];
-	        this.format = source["format"];
-	        this.keep_alive = this.convertValues(source["keep_alive"], null);
-	        this.options = source["options"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class EmbedRequest {
-	    model: string;
-	    input: any;
-	    // Go type: Duration
-	    keep_alive?: any;
-	    truncate?: boolean;
-	    options: {[key: string]: any};
-	
-	    static createFrom(source: any = {}) {
-	        return new EmbedRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.input = source["input"];
-	        this.keep_alive = this.convertValues(source["keep_alive"], null);
-	        this.truncate = source["truncate"];
-	        this.options = source["options"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class EmbedResponse {
 	    model: string;
 	    embeddings: number[][];
@@ -139,43 +67,6 @@ export namespace ollama {
 	        this.embeddings = source["embeddings"];
 	    }
 	}
-	export class EmbeddingRequest {
-	    model: string;
-	    prompt: string;
-	    // Go type: Duration
-	    keep_alive?: any;
-	    options: {[key: string]: any};
-	
-	    static createFrom(source: any = {}) {
-	        return new EmbeddingRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.prompt = source["prompt"];
-	        this.keep_alive = this.convertValues(source["keep_alive"], null);
-	        this.options = source["options"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class EmbeddingResponse {
 	    embedding: number[];
 	
@@ -187,57 +78,6 @@ export namespace ollama {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.embedding = source["embedding"];
 	    }
-	}
-	export class GenerateRequest {
-	    model: string;
-	    prompt: string;
-	    system: string;
-	    template: string;
-	    context?: number[];
-	    stream?: boolean;
-	    raw?: boolean;
-	    format: string;
-	    // Go type: Duration
-	    keep_alive?: any;
-	    images?: number[][];
-	    options: {[key: string]: any};
-	
-	    static createFrom(source: any = {}) {
-	        return new GenerateRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.prompt = source["prompt"];
-	        this.system = source["system"];
-	        this.template = source["template"];
-	        this.context = source["context"];
-	        this.stream = source["stream"];
-	        this.raw = source["raw"];
-	        this.format = source["format"];
-	        this.keep_alive = this.convertValues(source["keep_alive"], null);
-	        this.images = source["images"];
-	        this.options = source["options"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class ModelDetails {
 	    parent_model: string;
@@ -332,7 +172,22 @@ export namespace ollama {
 		    return a;
 		}
 	}
+	export class Message {
+	    role: string;
+	    content: string;
+	    images?: number[][];
 	
+	    static createFrom(source: any = {}) {
+	        return new Message(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.role = source["role"];
+	        this.content = source["content"];
+	        this.images = source["images"];
+	    }
+	}
 	
 	export class ProcessModelResponse {
 	    name: string;
@@ -406,6 +261,24 @@ export namespace ollama {
 		    }
 		    return a;
 		}
+	}
+	export class ProgressResponse {
+	    status: string;
+	    digest?: string;
+	    total?: number;
+	    completed?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProgressResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
+	        this.digest = source["digest"];
+	        this.total = source["total"];
+	        this.completed = source["completed"];
+	    }
 	}
 	export class ShowResponse {
 	    license?: string;

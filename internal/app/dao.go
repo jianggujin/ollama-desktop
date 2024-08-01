@@ -12,14 +12,14 @@ type Dao struct {
 }
 
 func (d *Dao) startup(ctx context.Context) {
-	if dao == nil {
+	if d.dao == nil {
 		d.dao = &dao2.DbDao{}
 	}
 	d.dao.Startup(ctx)
 }
 
 func (d *Dao) shutdown() {
-	if dao == nil {
+	if d.dao == nil {
 		return
 	}
 	d.dao.Shutdown()

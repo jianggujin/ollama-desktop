@@ -15,8 +15,9 @@ import (
 var sqlFiles embed.FS
 
 type DbDao struct {
-	ctx context.Context
-	db  *sql.DB
+	ctx    context.Context
+	db     *sql.DB
+	driver *vulcan.SqlDriver
 }
 
 var Dao *DbDao
@@ -60,10 +61,19 @@ func (d *DbDao) init() error {
 }
 
 func (d *DbDao) migrate() error {
-	migrator := vulcan.NewSqliteMigrator(vulcan.NewSqlDriver(d.db))
+	d.driver = vulcan.NewSqlDriver(d.db)
+	migrator := vulcan.NewSqliteMigrator(d.driver)
 	migrate := vulcan.NewVulcan(migrator, &vulcan.EmbedFSSource{
 		Fs:    sqlFiles,
 		Paths: []string{"sql"},
 	})
 	return migrate.MigrateContext(d.ctx)
+}
+
+func (d *DbDao) GetDriver() *vulcan.SqlDriver {
+	return d.driver
+}
+
+func (d *DbDao) GetDb() *sql.DB {
+	return d.db
 }

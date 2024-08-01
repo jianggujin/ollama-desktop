@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"ollama-desktop/internal/config"
@@ -17,7 +16,6 @@ import (
 var ollama = Ollama{}
 
 type Ollama struct {
-	ctx context.Context
 }
 
 func (o *Ollama) Host() string {
@@ -66,28 +64,28 @@ type OllamaEnvVar struct {
 }
 
 func (o *Ollama) Version() (string, error) {
-	return api.ClientFromConfig().Version(o.ctx)
+	return api.ClientFromConfig().Version(app.ctx)
 }
 
 func (o *Ollama) Heartbeat() {
 	var installed, started bool
 	client := api.ClientFromConfig()
 
-	started = client.Heartbeat(o.ctx) == nil
+	started = client.Heartbeat(app.ctx) == nil
 
 	if !started {
-		installed, _ = cmd.CheckInstalled(o.ctx)
+		installed, _ = cmd.CheckInstalled(app.ctx)
 	} else {
 		installed = true
 	}
 	os := gorun.GOOS
-	runtime.EventsEmit(o.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"))
+	runtime.EventsEmit(app.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"))
 }
 
 func (o *Ollama) Start() error {
 	client := api.ClientFromConfig()
 
-	err := cmd.StartApp(o.ctx, client)
+	err := cmd.StartApp(app.ctx, client)
 	if err != nil {
 		log.Error().Err(err).Msg("Ollama StartApp")
 		return err
@@ -97,11 +95,11 @@ func (o *Ollama) Start() error {
 }
 
 func (o *Ollama) List() (*olm.ListResponse, error) {
-	return api.ClientFromConfig().List(o.ctx)
+	return api.ClientFromConfig().List(app.ctx)
 }
 
 func (o *Ollama) ListRunning() (*olm.ProcessResponse, error) {
-	return api.ClientFromConfig().ListRunning(o.ctx)
+	return api.ClientFromConfig().ListRunning(app.ctx)
 }
 
 func (o *Ollama) Generate(requestId, requestStr string) error {
@@ -109,7 +107,7 @@ func (o *Ollama) Generate(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Generate(o.ctx, request, func(response olm.GenerateResponse) error {
+	go api.ClientFromConfig().Generate(app.ctx, request, func(response olm.GenerateResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -121,7 +119,7 @@ func (o *Ollama) Chat(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Chat(o.ctx, request, func(response olm.ChatResponse) error {
+	go api.ClientFromConfig().Chat(app.ctx, request, func(response olm.ChatResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -133,7 +131,7 @@ func (o *Ollama) Delete(requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	return api.ClientFromConfig().Delete(o.ctx, request)
+	return api.ClientFromConfig().Delete(app.ctx, request)
 }
 
 func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
@@ -141,7 +139,7 @@ func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Show(o.ctx, request)
+	return api.ClientFromConfig().Show(app.ctx, request)
 }
 
 func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
@@ -149,7 +147,7 @@ func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Embed(o.ctx, request)
+	return api.ClientFromConfig().Embed(app.ctx, request)
 }
 
 func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
@@ -157,7 +155,7 @@ func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Embeddings(o.ctx, request)
+	return api.ClientFromConfig().Embeddings(app.ctx, request)
 }
 
 func (o *Ollama) Pull(requestId, requestStr string) error {
@@ -165,7 +163,7 @@ func (o *Ollama) Pull(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Pull(o.ctx, request, func(response olm.ProgressResponse) error {
+	go api.ClientFromConfig().Pull(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -177,7 +175,7 @@ func (o *Ollama) Push(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Push(o.ctx, request, func(response olm.ProgressResponse) error {
+	go api.ClientFromConfig().Push(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -189,7 +187,7 @@ func (o *Ollama) Create(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Create(o.ctx, request, func(response olm.ProgressResponse) error {
+	go api.ClientFromConfig().Create(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -201,5 +199,5 @@ func (o *Ollama) Copy(requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	return api.ClientFromConfig().Copy(o.ctx, request)
+	return api.ClientFromConfig().Copy(app.ctx, request)
 }

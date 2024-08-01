@@ -67,6 +67,7 @@ func StartApp(server *assetserver.Options) error {
 			&dao,
 			&downloader,
 			&ollama,
+			&chat,
 		},
 		Logger:             &logger{},
 		LogLevelProduction: ll,

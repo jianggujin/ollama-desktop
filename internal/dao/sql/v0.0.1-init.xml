@@ -4,18 +4,12 @@
         xsi:schemaLocation="http://www.jianggujin.com/xml/vulcan
                    ../../vulcan/vulcan.xsd">
     <createTable tableName="t_config" remarks="配置信息表">
-        <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
-        <column columnName="config_key" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置键"/>
+        <column columnName="config_key" dataType="VARCHAR" maxLength="100" primaryKey="true"
+                remarks="配置键"/>
         <column columnName="config_value" dataType="TEXT" remarks="配置值"/>
-        <column columnName="config_group" dataType="VARCHAR" maxLength="100" nullable="false" remarks="配置组"/>
-        <column columnName="config_comment" dataType="VARCHAR" maxLength="500" remarks="配置说明"/>
         <column columnName="created_at" dataType="TIMESTAMP" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" remarks="修改时间"/>
     </createTable>
-    <createIndex tableName="t_config" indexName="ux_config">
-        <indexColumn columnName="config_group"/>
-        <indexColumn columnName="config_key"/>
-    </createIndex>
     <createTable tableName="t_session" remarks="会话信息表">
         <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
         <column columnName="session_name" dataType="VARCHAR" maxLength="50" nullable="false" remarks="会话名称"/>

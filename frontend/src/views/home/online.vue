@@ -46,7 +46,6 @@
         background
         :current-page="pagination.page"
         :page-count="pagination.pageCount"
-        size="smal"
         layout="prev, pager, next"
         @current-change="changeCurrentPage"
         @change="$refs.scrollbar.setScrollTop(0)"
@@ -87,8 +86,7 @@ function handleSearch(page) {
     })
   } else if (searchForm.value.searchType === 'function') {
     runAsync(() => SearchOnline(JSON.stringify({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c })), data => {
-      pagination.value.page = data.page
-      pagination.value.pageCount = data.pageCount
+      pagination.value = { page: data.page, pageCount: data.pageCount }
       list.value = data.items
     }, _ => {
       list.value = []

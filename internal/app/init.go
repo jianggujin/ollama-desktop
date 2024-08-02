@@ -69,7 +69,6 @@ func StartApp(server *assetserver.Options) error {
 		SingleInstanceLock: singleInstanceLock,
 		Bind: []interface{}{
 			&app,
-			&dao,
 			&downloader,
 			&ollama,
 			&chat,

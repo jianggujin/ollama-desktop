@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -24,8 +23,7 @@ const (
 var dao = Dao{}
 
 type Dao struct {
-	sessions []*Session
-	dao      *dao2.DbDao
+	dao *dao2.DbDao
 }
 
 func (d *Dao) startup(ctx context.Context) {
@@ -42,10 +40,7 @@ func (d *Dao) shutdown() {
 	d.dao.Shutdown()
 }
 
-func (d *Dao) Sessions(forceUpdate bool) ([]*Session, error) {
-	if d.sessions != nil && !forceUpdate {
-		return d.sessions, nil
-	}
+func (d *Dao) sessions() ([]*SessionModel, error) {
 	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
                   options, session_type, created_at, updated_at
             from t_session
@@ -55,9 +50,9 @@ func (d *Dao) Sessions(forceUpdate bool) ([]*Session, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var sessions []*Session
+	var sessions []*SessionModel
 	for rows.Next() {
-		session := &Session{}
+		session := &SessionModel{}
 		if err := rows.Scan(&session.Id, &session.SessionName, &session.ModelName, &session.Prompts,
 			&session.MessageHistoryCount, &session.UseStream, &session.ResponseFormat, &session.KeepAlive,
 			&session.Options, &session.SessionType, &session.CreatedAt, &session.UpdatedAt); err != nil {
@@ -65,41 +60,25 @@ func (d *Dao) Sessions(forceUpdate bool) ([]*Session, error) {
 		}
 		sessions = append(sessions, session)
 	}
-	d.sessions = sessions
 	return sessions, nil
 }
 
-func (d *Dao) CreateSession(requestStr string) (*Session, error) {
-	session := &Session{}
-	if err := json.Unmarshal([]byte(requestStr), session); err != nil {
-		return nil, err
-	}
-	session.Id = uuid.NewString()
-	session.CreatedAt = time.Now()
-	session.UpdatedAt = time.Now()
-
+func (d *Dao) createSession(session *SessionModel) error {
 	sqlStr := `insert into t_session(id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
                   options, session_type, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	err := d.dao.GetDriver().Execute(app.ctx, sqlStr, session.Id, session.SessionName, session.ModelName, session.Prompts,
+	return d.dao.GetDriver().Execute(app.ctx, sqlStr, session.Id, session.SessionName, session.ModelName, session.Prompts,
 		session.MessageHistoryCount, session.UseStream, session.ResponseFormat, session.KeepAlive,
 		session.Options, session.SessionType, session.CreatedAt, session.UpdatedAt)
-	if err == nil {
-		return nil, err
-	}
-
-	d.Sessions(true)
-	return session, nil
 }
 
-func (d *Dao) DeleteSession(id string) (*Session, error) {
-	session, err := d.findSession(id)
-	if err != nil {
-		return nil, err
+func (d *Dao) deleteSession(id string, sessions []*SessionModel) error {
+	if _, err := d.findSession(id, sessions); err != nil {
+		return err
 	}
 
 	tx, err := d.dao.GetDb().Begin()
 	if err == nil {
-		return nil, err
+		return err
 	}
 	err = func() error {
 		// 删除会话
@@ -130,16 +109,10 @@ func (d *Dao) DeleteSession(id string) (*Session, error) {
 		err = tx.Commit()
 	}
 
-	d.Sessions(true)
-
-	return session, err
+	return err
 }
 
-func (d *Dao) findSession(id string) (*Session, error) {
-	sessions, err := d.Sessions(false)
-	if err != nil {
-		return nil, err
-	}
+func (d *Dao) findSession(id string, sessions []*SessionModel) (*SessionModel, error) {
 	if len(sessions) == 0 {
 		return nil, errors.New("session not exists")
 	}
@@ -151,8 +124,8 @@ func (d *Dao) findSession(id string) (*Session, error) {
 	return nil, errors.New("session not exists")
 }
 
-func (d *Dao) scanQuestion(rows *sql.Rows) (*Question, error) {
-	question := &Question{}
+func (d *Dao) scanQuestion(rows *sql.Rows) (*QuestionModel, error) {
+	question := &QuestionModel{}
 	if err := rows.Scan(&question.Id, &question.SessionId, &question.QuestionContent, &question.AnswerCount,
 		&question.MessageType, &question.HasImage, &question.CreatedAt, &question.UpdatedAt); err != nil {
 		return nil, err
@@ -160,7 +133,7 @@ func (d *Dao) scanQuestion(rows *sql.Rows) (*Question, error) {
 	return question, nil
 }
 
-func (d *Dao) findQuestion(id string) (*Question, error) {
+func (d *Dao) findQuestion(id string) (*QuestionModel, error) {
 	sqlStr := `select id, session_id, question_content, answer_count, message_type, has_image, created_at, updated_at
             from t_question where id = ?`
 	rows, err := d.dao.GetDriver().Query(app.ctx, sqlStr, id)
@@ -174,7 +147,7 @@ func (d *Dao) findQuestion(id string) (*Question, error) {
 	return nil, errors.New("question not exists")
 }
 
-func (d *Dao) combineHistoryMessages(session *Session, skipLast bool) ([]ollama2.Message, error) {
+func (d *Dao) combineHistoryMessages(session *SessionModel, skipLast bool) ([]ollama2.Message, error) {
 	if session.MessageHistoryCount < 1 {
 		return nil, nil
 	}
@@ -194,7 +167,7 @@ func (d *Dao) combineHistoryMessages(session *Session, skipLast bool) ([]ollama2
 		return nil, err
 	}
 	defer rows.Close()
-	var questions []*Question
+	var questions []*QuestionModel
 	var questionIds []string
 	values := []interface{}{
 		session.Id,
@@ -225,10 +198,10 @@ func (d *Dao) combineHistoryMessages(session *Session, skipLast bool) ([]ollama2
 		return nil, err
 	}
 	defer rows.Close()
-	answerMap := map[string]*Answer{}
+	answerMap := map[string]*AnswerModel{}
 
 	for rows.Next() {
-		answer := &Answer{}
+		answer := &AnswerModel{}
 		if err := rows.Scan(&answer.Id, &answer.SessionId, &answer.QuestionId, &answer.AnswerContent,
 			&answer.MessageRole, &answer.TotalDuration, &answer.LoadDuration, &answer.PromptEvalCount,
 			&answer.PromptEvalDuration, &answer.EvalCount, &answer.EvalDuration, &answer.DoneReason,
@@ -288,7 +261,7 @@ func (d *Dao) findImages(refId, refType string) ([]ollama2.ImageData, error) {
 	var images []ollama2.ImageData
 
 	for rows.Next() {
-		image := &Image{}
+		image := &ImageModel{}
 		if err := rows.Scan(&image.Id, &image.SessionId, &image.RefId, &image.RefType, &image.ImageData,
 			&image.CreatedAt, &image.UpdatedAt); err != nil {
 			return nil, err
@@ -298,7 +271,7 @@ func (d *Dao) findImages(refId, refType string) ([]ollama2.ImageData, error) {
 	return images, nil
 }
 
-func (d *Dao) createAnswer(question *Question, answer *Answer, questionImages, answerImages []ollama2.ImageData, isNew bool) error {
+func (d *Dao) createAnswer(question *QuestionModel, answer *AnswerModel, questionImages, answerImages []ollama2.ImageData, isNew bool) error {
 	tx, err := d.dao.GetDb().Begin()
 	if err == nil {
 		return err
@@ -375,7 +348,32 @@ func (d *Dao) createAnswer(question *Question, answer *Answer, questionImages, a
 	return err
 }
 
-type Session struct {
+func (d *Dao) configs() (map[string]string, error) {
+	sqlStr := `select config_key, config_value from t_config`
+	rows, err := d.dao.GetDriver().Query(app.ctx, sqlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	configs := make(map[string]string)
+	for rows.Next() {
+		var configKey, configValue string
+		if err := rows.Scan(&configKey, &configValue); err != nil {
+			return nil, err
+		}
+		configs[configKey] = configValue
+	}
+	return configs, nil
+}
+
+type ConfigModel struct {
+	ConfigKey   string    `json:"configKey"`
+	ConfigValue string    `json:"configValue"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type SessionModel struct {
 	Id                  string        `json:"id"`
 	SessionName         string        `json:"sessionName"`
 	ModelName           string        `json:"modelName"`
@@ -390,7 +388,7 @@ type Session struct {
 	UpdatedAt           time.Time     `json:"updatedAt"`
 }
 
-type Question struct {
+type QuestionModel struct {
 	Id              string    `json:"id"`
 	SessionId       string    `json:"sessionId"`
 	QuestionContent string    `json:"questionContent"`
@@ -401,7 +399,7 @@ type Question struct {
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
-type Answer struct {
+type AnswerModel struct {
 	Id                 string        `json:"id"`
 	SessionId          string        `json:"sessionId"`
 	QuestionId         string        `json:"questionId"`
@@ -414,14 +412,14 @@ type Answer struct {
 	EvalCount          int           `json:"evalCount"`
 	EvalDuration       time.Duration `json:"evalDuration"`
 	DoneReason         string        `json:"doneReason"`
-	IsLast             bool          `json:"is_last"`
-	IsSuccess          bool          `json:"is_success"`
+	IsLast             bool          `json:"isLast"`
+	IsSuccess          bool          `json:"isSuccess"`
 	HasImage           bool          `json:"hasImage"`
 	CreatedAt          time.Time     `json:"createdAt"`
 	UpdatedAt          time.Time     `json:"updatedAt"`
 }
 
-type Image struct {
+type ImageModel struct {
 	Id        string    `json:"id"`
 	SessionId string    `json:"sessionId"`
 	RefId     string    `json:"refId"`

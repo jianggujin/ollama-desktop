@@ -14,19 +14,63 @@ import (
 var chat = Chat{}
 
 type Chat struct {
+	sessions []*SessionModel
+}
+
+func (c *Chat) Sessions(forceUpdate bool) ([]*SessionModel, error) {
+	if c.sessions != nil && !forceUpdate {
+		return c.sessions, nil
+	}
+	var err error
+	c.sessions, err = dao.sessions()
+	return c.sessions, err
+}
+
+func (c *Chat) CreateSession(requestStr string) (*SessionModel, error) {
+	session := &SessionModel{}
+	if err := json.Unmarshal([]byte(requestStr), session); err != nil {
+		return nil, err
+	}
+	session.Id = uuid.NewString()
+	session.CreatedAt = time.Now()
+	session.UpdatedAt = time.Now()
+
+	if err := dao.createSession(session); err != nil {
+		return nil, err
+	}
+
+	c.Sessions(true)
+	return session, nil
+}
+
+func (c *Chat) DeleteSession(id string) (string, error) {
+	sessions, err := c.Sessions(false)
+	if err != nil {
+		return id, err
+	}
+	if err := dao.deleteSession(id, sessions); err != nil {
+		return id, err
+	}
+	c.Sessions(true)
+
+	return id, nil
 }
 
 func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
+	sessions, err := c.Sessions(false)
+	if err != nil {
+		return nil, err
+	}
 	request := &ConversationRequest{}
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	session, err := dao.findSession(request.SessionId)
+	session, err := dao.findSession(request.SessionId, sessions)
 	if err != nil {
 		return nil, err
 	}
 	isNew := true
-	var question *Question
+	var question *QuestionModel
 	var images []olm.ImageData
 	// 存在消息编号，查找历史消息
 	if request.QuestionId != "" {
@@ -47,7 +91,7 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		question = &Question{
+		question = &QuestionModel{
 			Id:              uuid.NewString(),
 			SessionId:       session.Id,
 			QuestionContent: request.Content,
@@ -59,7 +103,7 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 		}
 	}
 
-	answer := &Answer{
+	answer := &AnswerModel{
 		Id:         uuid.NewString(),
 		SessionId:  session.Id,
 		QuestionId: question.Id,
@@ -86,7 +130,7 @@ func (c *Chat) convertImageDatas(images []string) ([]olm.ImageData, error) {
 	return list, nil
 }
 
-func (c *Chat) chat(session *Session, question *Question, answer *Answer, images []olm.ImageData, isNew bool) {
+func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *AnswerModel, images []olm.ImageData, isNew bool) {
 	var answerImages []olm.ImageData
 	defer dao.createAnswer(question, answer, images, answerImages, isNew)
 	var keepAlive *olm.Duration

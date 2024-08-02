@@ -3,7 +3,6 @@ package ollama
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
@@ -15,14 +14,13 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var noModelError = errors.New("No Model")
 
 type Client struct {
-	base *url.URL
-	http *http.Client
+	Base *url.URL
+	Http *http.Client
 }
 
 func checkError(resp *http.Response, body []byte) error {
@@ -33,28 +31,8 @@ func checkError(resp *http.Response, body []byte) error {
 	return ollama.StatusError{StatusCode: resp.StatusCode, Status: resp.Status, ErrorMessage: string(body)}
 }
 
-func NewClient() *Client {
-	base, _ := url.Parse("https://ollama.com")
-	var proxy func(*http.Request) (*url.URL, error)
-	if config.Config.Proxy != nil {
-		proxy = http.ProxyURL(config.Config.Proxy.ToUrl())
-	}
-	return &Client{
-		base: base,
-		http: &http.Client{
-			Timeout: 30 * time.Second, // 设置超时时间为 30 秒
-			Transport: &http.Transport{
-				Proxy: proxy,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true, // 不验证证书
-				},
-			},
-		},
-	}
-}
-
 func (c *Client) do(ctx context.Context, path string, reqData map[string]string) ([]byte, error) {
-	requestURL := c.base.JoinPath(path)
+	requestURL := c.Base.JoinPath(path)
 	if len(reqData) > 0 {
 		rawQuery := ""
 		for name, value := range reqData {
@@ -72,7 +50,7 @@ func (c *Client) do(ctx context.Context, path string, reqData map[string]string)
 
 	request.Header.Set("User-Agent", fmt.Sprintf("ollama-desktop/%s (%s %s) Go/%s", config.BuildVersion, runtime.GOARCH, runtime.GOOS, runtime.Version()))
 
-	respObj, err := c.http.Do(request)
+	respObj, err := c.Http.Do(request)
 	if err != nil {
 		return nil, err
 	}

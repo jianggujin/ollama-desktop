@@ -40,22 +40,6 @@ type Proxy struct {
 	Password string `json:"password"`
 }
 
-func (p *Proxy) ToUrl() *url.URL {
-	u := &url.URL{
-		Scheme: p.Scheme,
-		User:   url.UserPassword(p.Username, p.Password),
-		Host:   p.Host,
-	}
-	if p.Username != "" && p.Password != "" {
-		if p.Password != "" {
-			u.User = url.UserPassword(p.Username, p.Password)
-		} else {
-			u.User = url.User(p.Username)
-		}
-	}
-	return u
-}
-
 // Ollama配置
 type OllamaHost struct {
 	Scheme string `json:"scheme"`

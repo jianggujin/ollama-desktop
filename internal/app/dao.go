@@ -366,6 +366,36 @@ func (d *Dao) configs() (map[string]string, error) {
 	return configs, nil
 }
 
+func (d *Dao) saveOrUpdateConfig(key, value string) error {
+	tx, err := d.dao.GetDb().Begin()
+	if err == nil {
+		return err
+	}
+	err = func() error {
+		sqlStr := `update t_config set config_value = ?, updated_at = ? where config_key = ?`
+		result, err := tx.ExecContext(app.ctx, sqlStr, value, time.Now(), key)
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowsAffected == 1 {
+			return nil
+		}
+		sqlStr = `insert into t_config(config_key, config_value, created_at, updated_at) values(?, ?, ?, ?)`
+		_, err = tx.ExecContext(app.ctx, sqlStr, key, value, time.Now(), time.Now())
+		return err
+	}()
+	if err != nil {
+		err = tx.Rollback()
+	} else {
+		err = tx.Commit()
+	}
+	return err
+}
+
 type ConfigModel struct {
 	ConfigKey   string    `json:"configKey"`
 	ConfigValue string    `json:"configValue"`

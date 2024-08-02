@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"ollama-desktop/internal/config"
@@ -19,8 +18,8 @@ import (
 // Client encapsulates client state for interacting with the ollama
 // service. Use [ClientFromEnvironment] to create new Clients.
 type Client struct {
-	base *url.URL
-	http *http.Client
+	Base *url.URL
+	Http *http.Client
 }
 
 func checkError(resp *http.Response, body []byte) error {
@@ -37,27 +36,6 @@ func checkError(resp *http.Response, body []byte) error {
 	}
 
 	return apiError
-}
-
-// ClientFromEnvironment creates a new [Client] using configuration from the
-// environment variable OLLAMA_HOST, which points to the network host and
-// port on which the ollama service is listenting. The format of this variable
-// is:
-//
-//	<scheme>://<host>:<port>
-//
-// If the variable is not specified, a default ollama host and port will be
-// used.
-func ClientFromConfig() *Client {
-	ollamaHost := config.Config.Ollama.Host
-
-	return &Client{
-		base: &url.URL{
-			Scheme: ollamaHost.Scheme,
-			Host:   net.JoinHostPort(ollamaHost.Host, ollamaHost.Port),
-		},
-		http: http.DefaultClient,
-	}
 }
 
 func (c *Client) do(ctx context.Context, method, path string, reqData, respData any) error {
@@ -80,7 +58,7 @@ func (c *Client) do(ctx context.Context, method, path string, reqData, respData 
 		reqBody = bytes.NewReader(data)
 	}
 
-	requestURL := c.base.JoinPath(path)
+	requestURL := c.Base.JoinPath(path)
 	request, err := http.NewRequestWithContext(ctx, method, requestURL.String(), reqBody)
 	if err != nil {
 		return err
@@ -90,7 +68,7 @@ func (c *Client) do(ctx context.Context, method, path string, reqData, respData 
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("User-Agent", fmt.Sprintf("ollama-desktop/%s (%s %s) Go/%s", config.BuildVersion, runtime.GOARCH, runtime.GOOS, runtime.Version()))
 
-	respObj, err := c.http.Do(request)
+	respObj, err := c.Http.Do(request)
 	if err != nil {
 		return err
 	}
@@ -126,7 +104,7 @@ func (c *Client) stream(ctx context.Context, method, path string, data any, fn f
 		buf = bytes.NewBuffer(bts)
 	}
 
-	requestURL := c.base.JoinPath(path)
+	requestURL := c.Base.JoinPath(path)
 	request, err := http.NewRequestWithContext(ctx, method, requestURL.String(), buf)
 	if err != nil {
 		return err
@@ -136,7 +114,7 @@ func (c *Client) stream(ctx context.Context, method, path string, data any, fn f
 	request.Header.Set("Accept", "application/x-ndjson")
 	request.Header.Set("User-Agent", fmt.Sprintf("ollama-desktop/%s (%s %s) Go/%s", config.BuildVersion, runtime.GOARCH, runtime.GOOS, runtime.Version()))
 
-	response, err := c.http.Do(request)
+	response, err := c.Http.Do(request)
 	if err != nil {
 		return err
 	}

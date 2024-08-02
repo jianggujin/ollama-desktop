@@ -1,8 +1,12 @@
 package app
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"net"
+	"net/http"
+	"net/url"
 	"ollama-desktop/internal/config"
 	"ollama-desktop/internal/log"
 	olm "ollama-desktop/internal/ollama"
@@ -12,6 +16,7 @@ import (
 	"os"
 	gorun "runtime"
 	"strings"
+	"time"
 )
 
 var ollama = Ollama{}
@@ -65,14 +70,13 @@ type OllamaEnvVar struct {
 }
 
 func (o *Ollama) Version() (string, error) {
-	return api.ClientFromConfig().Version(app.ctx)
+	return o.newApiClient().Version(app.ctx)
 }
 
 func (o *Ollama) Heartbeat() {
 	var installed, started bool
-	client := api.ClientFromConfig()
 
-	started = client.Heartbeat(app.ctx) == nil
+	started = o.newApiClient().Heartbeat(app.ctx) == nil
 
 	if !started {
 		installed, _ = cmd.CheckInstalled(app.ctx)
@@ -84,9 +88,7 @@ func (o *Ollama) Heartbeat() {
 }
 
 func (o *Ollama) Start() error {
-	client := api.ClientFromConfig()
-
-	err := cmd.StartApp(app.ctx, client)
+	err := cmd.StartApp(app.ctx, o.newApiClient())
 	if err != nil {
 		log.Error().Err(err).Msg("Ollama StartApp")
 		return err
@@ -96,11 +98,11 @@ func (o *Ollama) Start() error {
 }
 
 func (o *Ollama) List() (*olm.ListResponse, error) {
-	return api.ClientFromConfig().List(app.ctx)
+	return o.newApiClient().List(app.ctx)
 }
 
 func (o *Ollama) ListRunning() (*olm.ProcessResponse, error) {
-	return api.ClientFromConfig().ListRunning(app.ctx)
+	return o.newApiClient().ListRunning(app.ctx)
 }
 
 func (o *Ollama) Generate(requestId, requestStr string) error {
@@ -108,7 +110,7 @@ func (o *Ollama) Generate(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Generate(app.ctx, request, func(response olm.GenerateResponse) error {
+	go o.newApiClient().Generate(app.ctx, request, func(response olm.GenerateResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -120,7 +122,7 @@ func (o *Ollama) Chat(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Chat(app.ctx, request, func(response olm.ChatResponse) error {
+	go o.newApiClient().Chat(app.ctx, request, func(response olm.ChatResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -132,7 +134,7 @@ func (o *Ollama) Delete(requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	return api.ClientFromConfig().Delete(app.ctx, request)
+	return o.newApiClient().Delete(app.ctx, request)
 }
 
 func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
@@ -140,7 +142,7 @@ func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Show(app.ctx, request)
+	return o.newApiClient().Show(app.ctx, request)
 }
 
 func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
@@ -148,7 +150,7 @@ func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Embed(app.ctx, request)
+	return o.newApiClient().Embed(app.ctx, request)
 }
 
 func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
@@ -156,7 +158,7 @@ func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return api.ClientFromConfig().Embeddings(app.ctx, request)
+	return o.newApiClient().Embeddings(app.ctx, request)
 }
 
 func (o *Ollama) Pull(requestId, requestStr string) error {
@@ -164,7 +166,7 @@ func (o *Ollama) Pull(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Pull(app.ctx, request, func(response olm.ProgressResponse) error {
+	go o.newApiClient().Pull(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -176,7 +178,7 @@ func (o *Ollama) Push(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Push(app.ctx, request, func(response olm.ProgressResponse) error {
+	go o.newApiClient().Push(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -188,7 +190,7 @@ func (o *Ollama) Create(requestId, requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	go api.ClientFromConfig().Create(app.ctx, request, func(response olm.ProgressResponse) error {
+	go o.newApiClient().Create(app.ctx, request, func(response olm.ProgressResponse) error {
 		runtime.EventsEmit(app.ctx, requestId, response)
 		return nil
 	})
@@ -200,7 +202,7 @@ func (o *Ollama) Copy(requestStr string) error {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return err
 	}
-	return api.ClientFromConfig().Copy(app.ctx, request)
+	return o.newApiClient().Copy(app.ctx, request)
 }
 
 func (o *Ollama) SearchOnline(requestStr string) (*olm.SearchResponse, error) {
@@ -208,7 +210,7 @@ func (o *Ollama) SearchOnline(requestStr string) (*olm.SearchResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return ollama2.NewClient().Search(app.ctx, request)
+	return o.newOllamaClient().Search(app.ctx, request)
 }
 
 func (o *Ollama) LibraryOnline(requestStr string) ([]*olm.ModelInfo, error) {
@@ -216,5 +218,93 @@ func (o *Ollama) LibraryOnline(requestStr string) ([]*olm.ModelInfo, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	return ollama2.NewClient().Library(app.ctx, request)
+	return o.newOllamaClient().Library(app.ctx, request)
+}
+
+func (o *Ollama) newApiClient() *api.Client {
+	ollamaHost := config.Config.Ollama.Host
+
+	scheme := ollamaHost.Scheme
+	if value, ok := configStore.Get(configOllamaScheme); ok && value != "" {
+		scheme = value
+	}
+	host := ollamaHost.Host
+	if value, ok := configStore.Get(configOllamaHost); ok && value != "" {
+		host = value
+	}
+	port := ollamaHost.Port
+	if value, ok := configStore.Get(configOllamaPort); ok && value != "" {
+		port = value
+	}
+
+	return &api.Client{
+		Base: &url.URL{
+			Scheme: scheme,
+			Host:   net.JoinHostPort(host, port),
+		},
+		Http: &http.Client{
+			Timeout: 60 * time.Second, // 设置超时时间为 30 秒
+		},
+	}
+}
+
+func (o *Ollama) newOllamaClient() *ollama2.Client {
+	base, _ := url.Parse("https://ollama.com")
+	var proxy func(*http.Request) (*url.URL, error)
+
+	var scheme, host, port, username, password string
+	if config.Config.Proxy != nil {
+		proxy := config.Config.Proxy
+		scheme = proxy.Scheme
+		host = proxy.Host
+		port = proxy.Port
+		username = proxy.Username
+		password = proxy.Password
+	}
+	if value, ok := configStore.Get(configProxyScheme); ok && value != "" {
+		scheme = value
+	}
+	if value, ok := configStore.Get(configProxyHost); ok && value != "" {
+		host = value
+	}
+	if value, ok := configStore.Get(configProxyPort); ok && value != "" {
+		port = value
+	}
+	if value, ok := configStore.Get(configProxyUsername); ok && value != "" {
+		username = value
+	}
+	if value, ok := configStore.Get(configProxyPassword); ok && value != "" {
+		password = value
+	}
+	if scheme != "" && host != "" && port != "" {
+		proxy = http.ProxyURL(o.proxyUrl(scheme, host, port, username, password))
+	}
+
+	return &ollama2.Client{
+		Base: base,
+		Http: &http.Client{
+			Timeout: 30 * time.Second, // 设置超时时间为 30 秒
+			Transport: &http.Transport{
+				Proxy: proxy,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true, // 不验证证书
+				},
+			},
+		},
+	}
+}
+
+func (o *Ollama) proxyUrl(scheme, host, port, username, password string) *url.URL {
+	u := &url.URL{
+		Scheme: scheme,
+		Host:   net.JoinHostPort(host, port),
+	}
+	if username != "" {
+		if password != "" {
+			u.User = url.UserPassword(username, password)
+		} else {
+			u.User = url.User(username)
+		}
+	}
+	return u
 }

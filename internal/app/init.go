@@ -43,25 +43,30 @@ func StartApp(server *assetserver.Options) error {
 	if err != nil {
 		ll = wailsLogger.ERROR
 	}
-
+	var singleInstanceLock *options.SingleInstanceLock
+	if config.Config.SingleInstance {
+		singleInstanceLock = &options.SingleInstanceLock{
+			UniqueId:               "d23a62a1-9f3d-4b9d-9c1e-8c1d0c63eafe",
+			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
+		}
+	}
 	// Create application with options
 	return wails.Run(&options.App{
-		Title:     "Ollama Desktop",
-		Width:     1024,
-		Height:    768,
-		MinWidth:  1024,
-		MinHeight: 768,
+		Title:                    "Ollama Desktop",
+		Width:                    config.Config.Width,
+		Height:                   config.Config.Height,
+		MinWidth:                 config.Config.MinWidth,
+		MinHeight:                config.Config.MinHeight,
+		AlwaysOnTop:              config.Config.AlwaysOnTop,
+		EnableDefaultContextMenu: config.Config.EnableDefaultContextMenu,
 		//DisableResize: true,
 		Frameless:   true,
 		AssetServer: server,
 		//BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:  app.startup,
-		OnDomReady: app.domReady,
-		OnShutdown: app.shutdown,
-		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId:               "d23a62a1-9f3d-4b9d-9c1e-8c1d0c63eafe",
-			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
-		},
+		OnStartup:          app.startup,
+		OnDomReady:         app.domReady,
+		OnShutdown:         app.shutdown,
+		SingleInstanceLock: singleInstanceLock,
 		Bind: []interface{}{
 			&app,
 			&dao,

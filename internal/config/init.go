@@ -72,6 +72,14 @@ type Ollama struct {
 }
 
 type AppConfig struct {
+	Width                    int  `json:"width"`
+	Height                   int  `json:"height"`
+	MinWidth                 int  `json:"minWidth"`
+	MinHeight                int  `json:"minHeight"`
+	AlwaysOnTop              bool `json:"alwaysOnTop"`
+	EnableDefaultContextMenu bool `json:"enableDefaultContextMenu"`
+	SingleInstance           bool `json:"singleInstance"`
+
 	Logging Logging `json:"logging"`
 	Ollama  Ollama  `json:"ollama"`
 	Proxy   *Proxy  `json:"proxy"`
@@ -87,6 +95,14 @@ func init() {
 			os.Exit(1)
 		}
 	}()
+
+	Config.Width = 1024
+	Config.Height = 768
+	Config.MinWidth = 1024
+	Config.MinHeight = 768
+	Config.AlwaysOnTop = false
+	Config.EnableDefaultContextMenu = false
+	Config.SingleInstance = true
 
 	Config.Logging.Level = "info"
 	Config.Logging.TimeFormat = time.DateTime

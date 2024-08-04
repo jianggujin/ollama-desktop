@@ -4,10 +4,10 @@
       <div style="display: flex;align-items: center;justify-content: center;margin-top: 50px;">
         <el-input v-model="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" maxlength="100"/>
       </div>
-      <div style="margin-top: 15px;margin: 20px auto 0 auto;width: 80%;display: flex;align-items: center;justify-content: space-between;">
+      <div style="margin: 20px auto 0 auto;width: 80%;display: flex;align-items: center;justify-content: space-between;">
         <el-radio-group v-model="searchForm.searchType">
-          <el-radio-button label="排序" value="sort" />
           <el-radio-button label="功能" value="function" />
+          <el-radio-button label="排序" value="sort" />
         </el-radio-group>
         <el-radio-group v-show="searchForm.searchType == 'sort'" v-model="searchForm.sort" class="split-radio">
           <el-radio-button label="特色" value="featured" />
@@ -25,10 +25,10 @@
       <div style="margin: 20px auto 0 auto;width: 80%;">
         <el-empty v-if="!list.length" />
         <div class="model-item" v-for="(item, index) in list" :key="index">
-          <div><el-link style="font-weight: 500;font-size: 1.5rem;">{{ item.name }}</el-link></div>
+          <div><el-link style="font-weight: 500;font-size: 1.5rem;" @click="openLibrary(item.name)">{{ item.name }}</el-link></div>
           <div style="margin-top: 10px;"><el-text style="">{{ item.description }}</el-text></div>
           <div style="margin-top: 10px;" v-if="item.tags?.length">
-            <el-tag v-for="(tag, ti) in item.tags" :key="ti" :type="tas == 'Embedding' || tas == 'Vision' || tag == 'Tools' || tag == 'Code' ? 'success' : 'primary'">{{ tag }}</el-tag>
+            <el-tag v-for="(tag, ti) in item.tags" :key="ti" :type="tag == 'Embedding' || tag == 'Vision' || tag == 'Tools' || tag == 'Code' ? 'success' : 'primary'">{{ tag }}</el-tag>
           </div>
           <div style="margin-top: 10px;display: flex;align-items: center;">
             <i-ep-download style="color:var(--el-color-info);"/>
@@ -59,6 +59,13 @@ import { Search } from '@element-plus/icons-vue'
 import { SearchOnline, LibraryOnline } from '@/go/app/Ollama.js'
 import { ElMessage } from 'element-plus'
 import { runAsync } from '~/utils/wrapper.js'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function openLibrary(name) {
+  router.push('/home/library/' + name)
+}
 
 const pagination = ref({
   page: 1,
@@ -67,7 +74,7 @@ const pagination = ref({
 
 const searchForm = ref({
   q: '',
-  searchType: 'sort',
+  searchType: 'function',
   sort: 'featured',
   c: ''
 })

@@ -2,19 +2,13 @@ package app
 
 import (
 	"context"
-	"fmt"
-	olm "ollama-desktop/internal/ollama"
+	"net/http"
+	"net/url"
+	ollama2 "ollama-desktop/internal/ollama/ollama"
 	"testing"
 )
 
 func TestApp_OllamaPull(t *testing.T) {
-	app := &App{
-		ctx: context.Background(),
-	}
-	request := &olm.PullRequest{
-		Model: "qwen2:0.5b",
-	}
-
 	//fn := func(resp api.ProgressResponse) error {
 	//	if resp.Digest != "" {
 	//		if spinner != nil {
@@ -56,4 +50,27 @@ func TestApp_OllamaPull(t *testing.T) {
 	//	t.Log(fmt.Sprintf("Status: %s, Digest: %s, Total: %d, Completed: %d", response.Status, response.Digest, response.Total, response.Completed))
 	//	return nil
 	//})
+}
+
+func TestOllama_ModelInfoOnline(t *testing.T) {
+	base, _ := url.Parse("https://ollama.com")
+
+	client := &ollama2.Client{
+		Base: base,
+		Http: http.DefaultClient,
+	}
+	resp, err := client.ModelInfo(context.Background(), "llama3.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("model", resp.Model)
+	t.Log("tags")
+	for _, tag := range resp.Tags {
+		t.Log(tag)
+	}
+	t.Log("metas")
+	for _, meta := range resp.Metas {
+		t.Log(meta)
+	}
+	t.Log("readme", resp.Readme)
 }

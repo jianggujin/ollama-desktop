@@ -3,3 +3,9 @@
 import {app} from '../models';
 
 export function Conversation(arg1:string):Promise<app.ConversationResponse>;
+
+export function CreateSession(arg1:string):Promise<app.SessionModel>;
+
+export function DeleteSession(arg1:string):Promise<string>;
+
+export function Sessions(arg1:boolean):Promise<Array<app.SessionModel>>;

@@ -6,7 +6,7 @@
           <li v-for="(menu, mIndex) in menus" :key="mIndex" class="el-sub-menu is-active is-opened">
             <div class="el-sub-menu__title"> {{menu.group}} </div>
             <ul class="el-menu el-menu--inline" style="--el-menu-level: 1;">
-              <li v-for="item in menu.items" :key="item.path" @click="handleSelect(item.path)" :class="{'el-menu-item':true, 'is-active': item.path == key}">
+              <li v-for="item in menu.items" :key="item.path" @click="handleSelect(item.path)" :class="{'el-menu-item':true, 'is-active': key.startsWith(item.path)}">
                 {{item.name}}
               </li>
             </ul>
@@ -20,7 +20,6 @@
   </el-container>
 </template>
 <script setup>
-import NavHeader from './NavHeader.vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const menus = ref([{
@@ -33,13 +32,13 @@ const menus = ref([{
     path: '/home/tags'
   }, {
     name: '在线模型',
-    path: '/home/online'
+    path: '/home/library'
   }]
 }])
 
 const route = useRoute()
 const router = useRouter()
-const key = computed(() => { return route.path })
+const key = computed(() => { return route.path || '/' })
 const handleSelect = (key) => { router.replace(key) }
 </script>
 <style lang="scss" scoped>
@@ -53,6 +52,10 @@ const handleSelect = (key) => { router.replace(key) }
 
     .el-menu .el-menu {
       min-height: unset !important;
+    }
+
+    .el-menu-item.is-active {
+      background-color: var(--el-menu-hover-bg-color);
     }
 
     .el-aside,

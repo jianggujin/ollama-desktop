@@ -221,6 +221,10 @@ func (o *Ollama) LibraryOnline(requestStr string) ([]*olm.ModelInfo, error) {
 	return o.newOllamaClient().Library(app.ctx, request)
 }
 
+func (o *Ollama) ModelInfoOnline(modelTag string) (*olm.ModelInfoResponse, error) {
+	return o.newOllamaClient().ModelInfo(app.ctx, modelTag)
+}
+
 func (o *Ollama) newApiClient() *api.Client {
 	ollamaHost := config.Config.Ollama.Host
 

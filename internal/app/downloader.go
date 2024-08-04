@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	ollama2 "ollama-desktop/internal/ollama"
-	"ollama-desktop/internal/ollama/api"
 	"sync"
 )
 
@@ -68,7 +67,7 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 	ctx, cancel := context.WithCancel(app.ctx)
 	item.cancel = cancel
 	d.eventsEmit(request.Model, pullWait, item)
-	err := api.ClientFromConfig().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
+	err := ollama.newApiClient().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
 		d.lock.Lock()
 		defer d.lock.Unlock()
 		status := ""

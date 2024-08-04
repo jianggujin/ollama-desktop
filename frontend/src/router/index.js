@@ -17,17 +17,21 @@ const routes = [{
       path: 'tags',
       component: () => import('~/views/home/tags.vue')
     }, {
-      path: 'online',
+      path: 'library',
       component: () => import('~/views/home/online.vue')
+    }, {
+      path: 'library/:modelTag',
+      component: () => import('~/views/home/library.vue'),
+      props: true
     }]
   },
   {
     path: 'chat',
-    component: () => import('~/views/about/index.vue')
+    component: () => import('~/views/chat/index.vue')
   },
   {
     path: 'setting',
-    component: () => import('~/views/about/index.vue')
+    component: () => import('~/views/setting/index.vue')
   },
   {
     path: 'about',

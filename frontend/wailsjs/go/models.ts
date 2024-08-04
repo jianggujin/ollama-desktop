@@ -64,7 +64,7 @@ export namespace app {
 	
 	    }
 	}
-	export class Session {
+	export class SessionModel {
 	    id: string;
 	    sessionName: string;
 	    modelName: string;
@@ -81,7 +81,7 @@ export namespace app {
 	    updatedAt: any;
 	
 	    static createFrom(source: any = {}) {
-	        return new Session(source);
+	        return new SessionModel(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -346,6 +346,80 @@ export namespace ollama {
 	        this.tagCount = source["tagCount"];
 	        this.updateTime = source["updateTime"];
 	    }
+	}
+	export class ModelMeta {
+	    name: string;
+	    content: string;
+	    unit: string;
+	    href: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelMeta(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.content = source["content"];
+	        this.unit = source["unit"];
+	        this.href = source["href"];
+	    }
+	}
+	export class ModelTag {
+	    name: string;
+	    latest: boolean;
+	    id: string;
+	    size: string;
+	    updateTime: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelTag(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.latest = source["latest"];
+	        this.id = source["id"];
+	        this.size = source["size"];
+	        this.updateTime = source["updateTime"];
+	    }
+	}
+	export class ModelInfoResponse {
+	    model?: ModelInfo;
+	    tags: ModelTag[];
+	    metas: ModelMeta[];
+	    readme: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelInfoResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = this.convertValues(source["model"], ModelInfo);
+	        this.tags = this.convertValues(source["tags"], ModelTag);
+	        this.metas = this.convertValues(source["metas"], ModelMeta);
+	        this.readme = source["readme"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class ProcessModelResponse {
 	    name: string;

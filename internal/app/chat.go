@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	olm "ollama-desktop/internal/ollama"
-	"ollama-desktop/internal/ollama/api"
 	"time"
 )
 
@@ -149,7 +148,7 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 		Images:  images,
 	})
 	var buffer bytes.Buffer
-	err = api.ClientFromConfig().Chat(app.ctx, &olm.ChatRequest{
+	err = ollama.newApiClient().Chat(app.ctx, &olm.ChatRequest{
 		Model:     session.ModelName,
 		Messages:  messages,
 		Stream:    &session.UseStream,

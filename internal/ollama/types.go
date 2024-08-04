@@ -786,7 +786,15 @@ type ModelTag struct {
 }
 
 type ModelInfoResponse struct {
-	Model  *ModelInfo  `json:"model"`
-	Tags   []*ModelTag `json:"tags"`
-	Readme string      `json:"readme"`
+	Model  *ModelInfo   `json:"model"`
+	Tags   []*ModelTag  `json:"tags"`
+	Metas  []*ModelMeta `json:"metas"`
+	Readme string       `json:"readme"`
+}
+
+type ModelMeta struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	Unit    string `json:"unit"`
+	Href    string `json:"href"`
 }

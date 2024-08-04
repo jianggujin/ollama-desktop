@@ -54,6 +54,10 @@ export function ListRunning() {
   return window['go']['app']['Ollama']['ListRunning']();
 }
 
+export function ModelInfoOnline(arg1) {
+  return window['go']['app']['Ollama']['ModelInfoOnline'](arg1);
+}
+
 export function Pull(arg1, arg2) {
   return window['go']['app']['Ollama']['Pull'](arg1, arg2);
 }

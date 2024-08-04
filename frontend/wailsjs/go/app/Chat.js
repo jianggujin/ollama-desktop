@@ -5,3 +5,15 @@
 export function Conversation(arg1) {
   return window['go']['app']['Chat']['Conversation'](arg1);
 }
+
+export function CreateSession(arg1) {
+  return window['go']['app']['Chat']['CreateSession'](arg1);
+}
+
+export function DeleteSession(arg1) {
+  return window['go']['app']['Chat']['DeleteSession'](arg1);
+}
+
+export function Sessions(arg1) {
+  return window['go']['app']['Chat']['Sessions'](arg1);
+}

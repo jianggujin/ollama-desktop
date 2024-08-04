@@ -287,11 +287,8 @@ func (c *Client) ModelTags(ctx context.Context, model string) (*ollama.ModelTags
 	return response, err
 }
 
-func (c *Client) ModelInfo(ctx context.Context, model, tag string) (*ollama.ModelInfoResponse, error) {
-	if tag != "" {
-		tag = ":" + tag
-	}
-	respBody, err := c.do(ctx, fmt.Sprintf("/library/%s%s", model, tag), nil)
+func (c *Client) ModelInfo(ctx context.Context, modelTag string) (*ollama.ModelInfoResponse, error) {
+	respBody, err := c.do(ctx, fmt.Sprintf("/library/%s", modelTag), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -336,11 +333,40 @@ func (c *Client) ModelInfo(ctx context.Context, model, tag string) (*ollama.Mode
 	doc.Find("#secondary-tags > a").Each(tagFunc)
 	modelInfo.TagCount = len(modelTags)
 
+	var modelMetas []*ollama.ModelMeta
+	doc.Find("#file-explorer > section.py-2 > div a").Each(func(i int, selection *goquery.Selection) {
+		children := selection.Children()
+		name := strings.TrimSpace(children.Eq(0).Text())
+		var content string
+		// model 特殊处理，存在多部分内容
+		if "model" == name {
+			var values []string
+			children.Eq(1).Find("div > span").Each(func(i int, span *goquery.Selection) {
+				if i > 0 && i%2 == 0 {
+					values = append(values, "·")
+				}
+				values = append(values, strings.TrimSpace(span.Text()))
+
+			})
+			content = strings.Join(values, " ")
+		} else {
+			content = strings.TrimSpace(children.Eq(1).Text())
+		}
+		meta := &ollama.ModelMeta{
+			Name:    name,
+			Content: content,
+			Unit:    strings.TrimSpace(children.Eq(2).Text()),
+			Href:    selection.AttrOr("href", ""),
+		}
+		modelMetas = append(modelMetas, meta)
+	})
+
 	readme := doc.Find("div#textareaInput > textarea#editor").Eq(0).Text()
 
 	response := &ollama.ModelInfoResponse{
 		Model:  modelInfo,
 		Tags:   modelTags,
+		Metas:  modelMetas,
 		Readme: readme,
 	}
 	return response, err

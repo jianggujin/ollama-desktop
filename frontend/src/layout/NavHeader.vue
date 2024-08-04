@@ -1,13 +1,13 @@
 <template>
   <div class="header" style="--wails-draggable:drag;cursor: move;">
     <div style="margin-left: 10px;">
-      <img width="45" height="45" src="/ollama.png" />
+      <img width="45" height="45" src="/ollama.png" @dragstart.prevent/>
       <el-text size="large" style="font-weight: 700;margin-left: 10px;">Ollama Desktop</el-text>
     </div>
     <div style="flex:1"></div>
     <el-menu style="--wails-draggable:no-drag;cursor: default;" :default-active="activeIndex" mode="horizontal" :ellipsis="false" @select="handleSelect">
       <el-menu-item index="/home">主页</el-menu-item>
-      <!-- <el-menu-item index="/chat">聊天</el-menu-item> -->
+      <el-menu-item index="/chat">聊天</el-menu-item>
       <!-- <el-menu-item index="/setting">设置</el-menu-item> -->
       <el-menu-item index="/about">关于</el-menu-item>
     </el-menu>
@@ -15,7 +15,6 @@
       <div class="icon-wrapper" style="width: var(--app-layout-header);">
         <el-switch v-model="isDark" style="--el-switch-on-color: #303133; --el-switch-off-color: #606266" inline-prompt :active-icon="Moon" :inactive-icon="Sunny" @change="toggleDark" />
       </div>
-      <!-- <svg-icon icon-class="fullscreen" /> -->
       <div class="icon-wrapper" @click="hanldeMinimise">
         <i-ep-minus />
       </div>
@@ -87,43 +86,44 @@ function handleQuit() {
 </script>
 
 <style lang="scss" scoped>
-  .header {
-    width: 100%;
+.header {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+
+  &>div {
     height: 100%;
     display: flex;
     align-items: center;
-
-    &>div {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    justify-content: center;
+  }
+  .icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: var(--app-layout-header);
+    background-color: var(--el-menu-bg-color);
+    &:hover {
+      cursor: pointer;
+      color: var(--el-menu-active-color) !important;
+      outline: none;
+      background-color: var(--el-menu-hover-bg-color);
     }
-    .icon-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: var(--app-layout-header);
-      background-color: var(--el-menu-bg-color);
-      &:hover {
-        cursor: pointer;
-        color: var(--el-menu-active-color) !important;
-        outline: none;
-        background-color: var(--el-menu-hover-bg-color);
-      }
-      &.danger:hover {
-        color: white !important;
-        background-color: var(--el-color-danger);
-      }
+    &.danger:hover {
+      color: white !important;
+      background-color: var(--el-color-danger);
     }
   }
+}
 
-  .el-menu {
-    border-bottom: none !important;
+.el-menu {
+  border-bottom: none !important;
+  height: 100%;
 
-    .el-menu-item:hover {
-      border-bottom: 1px solid var(--el-menu-border-color);
-    }
+  .el-menu-item:hover {
+    border-bottom: 1px solid var(--el-menu-border-color);
   }
+}
 </style>

@@ -29,6 +29,8 @@ export function List():Promise<ollama.ListResponse>;
 
 export function ListRunning():Promise<ollama.ProcessResponse>;
 
+export function ModelInfoOnline(arg1:string):Promise<ollama.ModelInfoResponse>;
+
 export function Pull(arg1:string,arg2:string):Promise<void>;
 
 export function Push(arg1:string,arg2:string):Promise<void>;

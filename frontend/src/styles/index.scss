@@ -23,3 +23,19 @@ html,body,#app {
 .el-menu-item:not(:hover):focus {
   background-color: transparent!important;
 }
+
+// 超出行数，自动显示行尾省略号，最多10行
+@for $i from 1 through 10 {
+	.line-#{$i} {
+		overflow: hidden;
+    text-overflow:ellipsis;
+		@if $i == 1 {
+			white-space: nowrap;
+		} @else {
+      display: -webkit-box!important;
+      -webkit-line-clamp: $i;
+      -webkit-box-orient: vertical!important;
+			word-break: break-all;
+		}
+	}
+}

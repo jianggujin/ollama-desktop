@@ -2,27 +2,53 @@ package app
 
 import (
 	"bytes"
-	"encoding/base64"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	olm "ollama-desktop/internal/ollama"
 	"time"
 )
 
+const (
+	messageTypeChat = "chat"
+)
+
 var chat = Chat{}
 
 type Chat struct {
-	sessions []*SessionModel
 }
 
-func (c *Chat) Sessions(forceUpdate bool) ([]*SessionModel, error) {
-	if c.sessions != nil && !forceUpdate {
-		return c.sessions, nil
+func (c *Chat) scanSession(rows *sql.Rows) (*SessionModel, error) {
+	session := &SessionModel{}
+	if err := rows.Scan(&session.Id, &session.SessionName, &session.ModelName, &session.Prompts,
+		&session.MessageHistoryCount, &session.UseStream, &session.ResponseFormat, &session.KeepAlive,
+		&session.Options, &session.SessionType, &session.CreatedAt, &session.UpdatedAt); err != nil {
+		return nil, err
 	}
-	var err error
-	c.sessions, err = dao.sessions()
-	return c.sessions, err
+	return session, nil
+}
+
+func (c *Chat) Sessions() ([]*SessionModel, error) {
+	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
+                  options, session_type, created_at, updated_at
+            from t_session
+            order by created_at desc`
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var sessions []*SessionModel
+	for rows.Next() {
+		session, err := c.scanSession(rows)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+	return sessions, nil
 }
 
 func (c *Chat) CreateSession(requestStr string) (*SessionModel, error) {
@@ -32,35 +58,127 @@ func (c *Chat) CreateSession(requestStr string) (*SessionModel, error) {
 	}
 	session.Id = uuid.NewString()
 	session.CreatedAt = time.Now()
-	session.UpdatedAt = time.Now()
+	session.UpdatedAt = session.CreatedAt
 
-	if err := dao.createSession(session); err != nil {
-		return nil, err
-	}
-
-	c.Sessions(true)
-	return session, nil
+	sqlStr := `insert into t_session(id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
+                  options, session_type, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := dao.db().ExecContext(app.ctx, sqlStr, session.Id, session.SessionName, session.ModelName, session.Prompts,
+		session.MessageHistoryCount, session.UseStream, session.ResponseFormat, session.KeepAlive,
+		session.Options, session.SessionType, session.CreatedAt, session.UpdatedAt)
+	return session, err
 }
 
 func (c *Chat) DeleteSession(id string) (string, error) {
-	sessions, err := c.Sessions(false)
-	if err != nil {
-		return id, err
-	}
-	if err := dao.deleteSession(id, sessions); err != nil {
-		return id, err
-	}
-	c.Sessions(true)
-
-	return id, nil
+	return id, dao.transaction(func(tx *sql.Tx) error {
+		// 删除会话
+		sqlStr := "delete from t_session where id = ?"
+		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
+			return err
+		}
+		// 删除问题
+		sqlStr = "delete from t_question where session_id = ?"
+		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
+			return err
+		}
+		// 删除回答
+		sqlStr = "delete from t_answer where session_id = ?"
+		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
-func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
-	sessions, err := c.Sessions(false)
+func (c *Chat) GetSession(id string) (*SessionModel, error) {
+	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
+                  options, session_type, created_at, updated_at
+            from t_session
+            where id = ?`
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr, id)
 	if err != nil {
 		return nil, err
 	}
-	request := &ConversationRequest{}
+	defer rows.Close()
+	for rows.Next() {
+		return c.scanSession(rows)
+	}
+	return nil, errors.New("session not exists")
+}
+
+type ChatMessage struct {
+	Id        string    `json:"id"`
+	SessionId string    `json:"sessionId"`
+	Role      string    `json:"role"`
+	Content   string    `json:"content"`
+	Success   bool      `json:"success"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (c *Chat) scanQuestion(rows *sql.Rows) (*QuestionModel, error) {
+	question := &QuestionModel{}
+	if err := rows.Scan(&question.Id, &question.SessionId, &question.QuestionContent, &question.AnswerCount,
+		&question.MessageType, &question.CreatedAt, &question.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return question, nil
+}
+
+func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error) {
+	request := &struct {
+		SessionId  string `json:"sessionId"`
+		NextMarker string `json:"nextMarker"`
+	}{}
+	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		return nil, err
+	}
+
+	var timeMarker time.Time
+	if request.NextMarker != "" {
+
+	} else {
+		timeMarker = time.Now()
+	}
+	time.ParseInLocation(, request.NextMarker, time.Local)
+
+	// 查询历史存在有效回答的消息
+	sqlStr := `select id, session_id, question_content, answer_count, message_type, created_at, updated_at
+            from t_question
+            where session_id = ? and created_at < select
+            order by created_at desc
+            limit ?`
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, 30)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var questions []*QuestionModel
+	var questionIds []string
+	values := []interface{}{
+		request.SessionId,
+	}
+	for rows.Next() {
+		question, err := d.scanQuestion(rows)
+		if err != nil {
+			return nil, err
+		}
+		questionIds = append(questionIds, question.Id)
+		values = append(values, question.Id)
+		questions = append(questions, question)
+	}
+	return dao.sessionHistoryMessages(request.SessionId, request.NextMarker)
+}
+
+type ConversationResponse struct {
+	SessionId  string `json:"sessionId"`
+	QuestionId string `json:"questionId"`
+	AnswerId   string `json:"messageId"`
+}
+
+func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
+	request := &struct {
+		SessionId string `json:"sessionId"`
+		Content   string `json:"content"`
+	}{}
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
@@ -86,7 +204,6 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 
 		isNew = false
 	} else {
-		images, err = c.convertImageDatas(request.Images)
 		if err != nil {
 			return nil, err
 		}
@@ -95,8 +212,7 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 			SessionId:       session.Id,
 			QuestionContent: request.Content,
 			AnswerCount:     0,
-			MessageType:     "chat",
-			HasImage:        len(images) > 0,
+			MessageType:     messageTypeChat,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
@@ -112,21 +228,6 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 
 	go c.chat(session, question, answer, images, isNew)
 	return &ConversationResponse{SessionId: session.Id, QuestionId: question.Id, AnswerId: answer.Id}, nil
-}
-
-func (c *Chat) convertImageDatas(images []string) ([]olm.ImageData, error) {
-	if len(images) == 0 {
-		return nil, nil
-	}
-	var list []olm.ImageData
-	for _, image := range images {
-		data, err := base64.StdEncoding.DecodeString(image)
-		if err == nil {
-			return nil, err
-		}
-		list = append(list, data)
-	}
-	return list, nil
 }
 
 func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *AnswerModel, images []olm.ImageData, isNew bool) {
@@ -159,14 +260,12 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 		message := response.Message
 		buffer.WriteString(message.Content)
 		if len(message.Images) > 0 {
-			answer.HasImage = true
 			answerImages = append(answerImages, message.Images...)
 		}
 		if response.Done {
 			answer.MessageRole = message.Role
 			answer.UpdatedAt = response.CreatedAt
 			answer.IsSuccess = true
-			answer.IsLast = true
 			answer.DoneReason = response.DoneReason
 			metrics := response.Metrics
 			answer.TotalDuration = metrics.TotalDuration
@@ -183,18 +282,4 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 	if err != nil {
 		runtime.EventsEmit(app.ctx, answer.Id, nil, err)
 	}
-}
-
-type ConversationRequest struct {
-	SessionId string `json:"sessionId"`
-	// 有值表示重新生成
-	QuestionId string   `json:"questionId"`
-	Content    string   `json:"content"`
-	Images     []string `json:"images"`
-}
-
-type ConversationResponse struct {
-	SessionId  string `json:"sessionId"`
-	QuestionId string `json:"questionId"`
-	AnswerId   string `json:"messageId"`
 }

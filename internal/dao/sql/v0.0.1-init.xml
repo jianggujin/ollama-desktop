@@ -34,7 +34,6 @@
         <column columnName="answer_count" dataType="INT" defaultOriginValue="0" nullable="false" remarks="回答次数"/>
         <column columnName="message_type" dataType="VARCHAR" maxLength="50" defaultValue="chat" nullable="false"
                 remarks="消息类型"/>
-        <column columnName="has_image" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否存在图片"/>
         <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
     </createTable>
@@ -55,9 +54,7 @@
         <column columnName="eval_count" dataType="INT" defaultOriginValue="0" remarks="评估计数"/>
         <column columnName="eval_duration" dataType="BIGINT" defaultOriginValue="0" remarks="评估持续时间"/>
         <column columnName="done_reason" dataType="TEXT" remarks="完成原因"/>
-        <column columnName="is_last" dataType="TINYINT" defaultOriginValue="1" nullable="false" remarks="是否最后一条"/>
         <column columnName="is_success" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否成功"/>
-        <column columnName="has_image" dataType="TINYINT" defaultOriginValue="0" nullable="false" remarks="是否存在图片"/>
         <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
     </createTable>
@@ -67,21 +64,5 @@
     <createIndex tableName="t_answer" indexName="ix_question_id_role">
         <indexColumn columnName="question_id"/>
         <indexColumn columnName="message_role"/>
-    </createIndex>
-    <createTable tableName="t_image" remarks="图片信息表">
-        <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
-        <column columnName="session_id" dataType="VARCHAR" maxLength="64" nullable="false" remarks="会话编号"/>
-        <column columnName="ref_id" dataType="VARCHAR" maxLength="64" nullable="false" remarks="关联编号"/>
-        <column columnName="ref_type" dataType="VARCHAR" maxLength="100" remarks="关联类型"/>
-        <column columnName="image_data" dataType="BLOB" remarks="图片数据"/>
-        <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
-        <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
-    </createTable>
-    <createIndex tableName="t_image" indexName="ix_session_image">
-        <indexColumn columnName="session_id"/>
-    </createIndex>
-    <createIndex tableName="t_image" indexName="ix_ref_id_type">
-        <indexColumn columnName="ref_id"/>
-        <indexColumn columnName="ref_type"/>
     </createIndex>
 </vulcan>

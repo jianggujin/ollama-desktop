@@ -40,76 +40,26 @@ func (d *Dao) shutdown() {
 	d.dao.Shutdown()
 }
 
-func (d *Dao) sessions() ([]*SessionModel, error) {
-	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
-                  options, session_type, created_at, updated_at
-            from t_session
-            order by created_at desc`
-	rows, err := d.dao.GetDriver().Query(app.ctx, sqlStr)
+func (d *Dao) db() *sql.DB {
+	return d.dao.GetDb()
+}
+
+func (d *Dao) transaction(fn func(tx *sql.Tx) error) error {
+	tx, err := d.dao.GetDb().Begin()
 	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		return tx.Rollback()
+	}
+	return tx.Commit()
+}
+
+func (d *Dao) SessionHistoryMessages(id string, sessions []*SessionModel) ([]*ChatMessage, error) {
+	if _, err := d.findSession(id, sessions); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var sessions []*SessionModel
-	for rows.Next() {
-		session := &SessionModel{}
-		if err := rows.Scan(&session.Id, &session.SessionName, &session.ModelName, &session.Prompts,
-			&session.MessageHistoryCount, &session.UseStream, &session.ResponseFormat, &session.KeepAlive,
-			&session.Options, &session.SessionType, &session.CreatedAt, &session.UpdatedAt); err != nil {
-			return nil, err
-		}
-		sessions = append(sessions, session)
-	}
-	return sessions, nil
-}
-
-func (d *Dao) createSession(session *SessionModel) error {
-	sqlStr := `insert into t_session(id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
-                  options, session_type, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	return d.dao.GetDriver().Execute(app.ctx, sqlStr, session.Id, session.SessionName, session.ModelName, session.Prompts,
-		session.MessageHistoryCount, session.UseStream, session.ResponseFormat, session.KeepAlive,
-		session.Options, session.SessionType, session.CreatedAt, session.UpdatedAt)
-}
-
-func (d *Dao) deleteSession(id string, sessions []*SessionModel) error {
-	if _, err := d.findSession(id, sessions); err != nil {
-		return err
-	}
-
-	tx, err := d.dao.GetDb().Begin()
-	if err == nil {
-		return err
-	}
-	err = func() error {
-		// 删除会话
-		sqlStr := "delete from t_session where id = ?"
-		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
-			return err
-		}
-		// 删除问题
-		sqlStr = "delete from t_question where session_id = ?"
-		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
-			return err
-		}
-		// 删除回答
-		sqlStr = "delete from t_answer where session_id = ?"
-		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
-			return err
-		}
-		// 删除图片
-		sqlStr = "delete from t_image where session_id = ?"
-		if _, err := tx.ExecContext(app.ctx, sqlStr, id); err != nil {
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		err = tx.Rollback()
-	} else {
-		err = tx.Commit()
-	}
-
-	return err
+	return nil, nil
 }
 
 func (d *Dao) findSession(id string, sessions []*SessionModel) (*SessionModel, error) {
@@ -212,7 +162,9 @@ func (d *Dao) combineHistoryMessages(session *SessionModel, skipLast bool) ([]ol
 	}
 
 	var ollamaMessages []ollama2.Message
-	for _, message := range questions {
+	//  ) _, message := range questions
+	for i := len(questions) - 1; i >= 0; i-- {
+		message := questions[i]
 		var images []ollama2.ImageData
 		if message.HasImage {
 			images, err = d.findImages(message.Id, refTypeQuestion)
@@ -271,7 +223,7 @@ func (d *Dao) findImages(refId, refType string) ([]ollama2.ImageData, error) {
 	return images, nil
 }
 
-func (d *Dao) createAnswer(question *QuestionModel, answer *AnswerModel, questionImages, answerImages []ollama2.ImageData, isNew bool) error {
+func (d *Dao) createAnswer(question *QuestionModel, answer *AnswerModel) error {
 	tx, err := d.dao.GetDb().Begin()
 	if err == nil {
 		return err
@@ -348,54 +300,6 @@ func (d *Dao) createAnswer(question *QuestionModel, answer *AnswerModel, questio
 	return err
 }
 
-func (d *Dao) configs() (map[string]string, error) {
-	sqlStr := `select config_key, config_value from t_config`
-	rows, err := d.dao.GetDriver().Query(app.ctx, sqlStr)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	configs := make(map[string]string)
-	for rows.Next() {
-		var configKey, configValue string
-		if err := rows.Scan(&configKey, &configValue); err != nil {
-			return nil, err
-		}
-		configs[configKey] = configValue
-	}
-	return configs, nil
-}
-
-func (d *Dao) saveOrUpdateConfig(key, value string) error {
-	tx, err := d.dao.GetDb().Begin()
-	if err == nil {
-		return err
-	}
-	err = func() error {
-		sqlStr := `update t_config set config_value = ?, updated_at = ? where config_key = ?`
-		result, err := tx.ExecContext(app.ctx, sqlStr, value, time.Now(), key)
-		if err != nil {
-			return err
-		}
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rowsAffected == 1 {
-			return nil
-		}
-		sqlStr = `insert into t_config(config_key, config_value, created_at, updated_at) values(?, ?, ?, ?)`
-		_, err = tx.ExecContext(app.ctx, sqlStr, key, value, time.Now(), time.Now())
-		return err
-	}()
-	if err != nil {
-		err = tx.Rollback()
-	} else {
-		err = tx.Commit()
-	}
-	return err
-}
-
 type ConfigModel struct {
 	ConfigKey   string    `json:"configKey"`
 	ConfigValue string    `json:"configValue"`
@@ -424,7 +328,6 @@ type QuestionModel struct {
 	QuestionContent string    `json:"questionContent"`
 	AnswerCount     int       `json:"answerCount"`
 	MessageType     string    `json:"messageType"`
-	HasImage        bool      `json:"hasImage"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -442,19 +345,7 @@ type AnswerModel struct {
 	EvalCount          int           `json:"evalCount"`
 	EvalDuration       time.Duration `json:"evalDuration"`
 	DoneReason         string        `json:"doneReason"`
-	IsLast             bool          `json:"isLast"`
 	IsSuccess          bool          `json:"isSuccess"`
-	HasImage           bool          `json:"hasImage"`
 	CreatedAt          time.Time     `json:"createdAt"`
 	UpdatedAt          time.Time     `json:"updatedAt"`
-}
-
-type ImageModel struct {
-	Id        string    `json:"id"`
-	SessionId string    `json:"sessionId"`
-	RefId     string    `json:"refId"`
-	RefType   string    `json:"refType"`
-	ImageData []byte    `json:"imageData"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }

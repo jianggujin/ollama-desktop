@@ -6,26 +6,28 @@ import (
 	"errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	ollama2 "ollama-desktop/internal/ollama"
+	"sort"
 	"sync"
 )
 
 var downloader = DownLoader{}
 
 const (
-	pullWait    = 1
-	pulling     = 2
-	pullSuccess = 3
-	pullError   = -1
+	pullStatusWait    = 1
+	pullStatusPulling = 2
+	pullStatusSuccess = 3
+	pullStatusError   = -1
+	pullEventList     = "pull_list"
+	pullEventSuccess  = "pull_success"
+	pullEventError    = "pull_error"
 )
 
 type DownloadItem struct {
 	Model    string `json:"model"`
 	Insecure bool   `json:"insecure,omitempty"`
-	// 进度条名称
-	Names []string `json:"names"`
 	// 进度条数据
-	Bars   map[string]ollama2.ProgressResponse `json:"bars"`
-	cancel context.CancelFunc                  `json:"-"`
+	Bars   []*ollama2.ProgressResponse `json:"bars"`
+	cancel context.CancelFunc          `json:"-"`
 }
 
 type DownLoader struct {
@@ -44,8 +46,6 @@ func (d *DownLoader) Pull(requestStr string) error {
 	if request.Model == "" {
 		return errors.New("model must not be empty")
 	}
-	d.lock.Lock()
-	defer d.lock.Unlock()
 	if d.tasks == nil {
 		d.tasks = make(map[string]*DownloadItem)
 	}
@@ -55,8 +55,7 @@ func (d *DownLoader) Pull(requestStr string) error {
 	item := &DownloadItem{
 		Model:    request.Model,
 		Insecure: request.Insecure,
-		Names:    nil,
-		Bars:     make(map[string]ollama2.ProgressResponse),
+		Bars:     nil,
 	}
 	d.tasks[request.Model] = item
 	go d.pull(request, item)
@@ -66,40 +65,46 @@ func (d *DownLoader) Pull(requestStr string) error {
 func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 	ctx, cancel := context.WithCancel(app.ctx)
 	item.cancel = cancel
-	d.eventsEmit(request.Model, pullWait, item)
+	d.emit(pullStatusWait, item)
 	err := ollama.newApiClient().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
-		d.lock.Lock()
-		defer d.lock.Unlock()
 		status := ""
+		length := len(item.Bars)
 		if response.Digest != "" {
-			if _, ok := item.Bars[response.Digest]; !ok {
-				item.Names = append(item.Names, response.Digest)
+			if length == 0 {
+				item.Bars = append(item.Bars, &response)
+			} else if item.Bars[length-1].Digest != response.Digest {
+				item.Bars = append(item.Bars, &response)
+			} else {
+				item.Bars[length-1] = &response
 			}
-			item.Bars[response.Digest] = response
 		} else if status != response.Status {
 			status = response.Status
-			item.Names = append(item.Names, status)
+			item.Bars = append(item.Bars, &response)
 		}
-		d.eventsEmit(request.Model, pulling, item)
+		d.emit(pullStatusPulling, item)
 		return nil
 	})
 	if err != nil {
-		d.eventsEmit(request.Model, pullError, item)
+		d.emit(pullStatusError, item)
 	} else {
-		d.eventsEmit(request.Model, pullSuccess, item)
+		d.emit(pullStatusSuccess, item)
 	}
 	delete(d.tasks, request.Model)
 }
 
-func (d *DownLoader) eventsEmit(model string, status int, item *DownloadItem) {
+func (d *DownLoader) emit(status int, item *DownloadItem) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
-	runtime.EventsEmit(app.ctx, "pull_"+model, status, item)
+	runtime.EventsEmit(app.ctx, pullEventList, d.List())
+	switch status {
+	case pullStatusSuccess:
+		runtime.EventsEmit(app.ctx, pullEventSuccess, item)
+	case pullStatusError:
+		runtime.EventsEmit(app.ctx, pullEventError, item)
+	}
 }
 
 func (d *DownLoader) Cancel(model string) {
-	d.lock.Lock()
-	defer d.lock.Unlock()
 	if d.tasks == nil {
 		return
 	}
@@ -112,8 +117,6 @@ func (d *DownLoader) Cancel(model string) {
 }
 
 func (d *DownLoader) List() []*DownloadItem {
-	d.lock.Lock()
-	defer d.lock.Unlock()
 	if d.tasks == nil {
 		return nil
 	}
@@ -121,5 +124,8 @@ func (d *DownLoader) List() []*DownloadItem {
 	for _, item := range d.tasks {
 		list = append(list, item)
 	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Model < list[j].Model
+	})
 	return list
 }

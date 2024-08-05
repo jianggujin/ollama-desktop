@@ -1,5 +1,10 @@
 package app
 
+import (
+	"database/sql"
+	"time"
+)
+
 const (
 	configOllamaScheme = "ollama.scheme"
 	configOllamaHost   = "ollama.host"
@@ -15,25 +20,52 @@ const (
 var configStore = Config{}
 
 type Config struct {
-	configs map[string]string
+	configCaches map[string]string
 }
 
-func (c *Config) update(forceUpdate bool) {
-	if c.configs != nil && !forceUpdate {
-		return
+func (c *Config) configs(forceUpdate bool) (map[string]string, error) {
+	if c.configCaches != nil && !forceUpdate {
+		return c.configCaches, nil
 	}
-	c.configs, _ = dao.configs()
+	sqlStr := `select config_key, config_value from t_config`
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	configs := make(map[string]string)
+	for rows.Next() {
+		var configKey, configValue string
+		if err := rows.Scan(&configKey, &configValue); err != nil {
+			return nil, err
+		}
+		configs[configKey] = configValue
+	}
+	c.configCaches = configs
+	return c.configCaches, nil
 }
 
-func (c *Config) Get(key string) (string, bool) {
-	c.update(false)
-	v, ok := c.configs[key]
-	return v, ok
+func (c *Config) get(key string) (string, error) {
+	configs, err := c.configs(false)
+	if err != nil {
+		return "", err
+	}
+	return configs[key], nil
 }
 
-func (c *Config) Set(key, value string) error {
-	if err := dao.saveOrUpdateConfig(key, value); err != nil {
+func (c *Config) set(key, value string) error {
+	configs, err := c.configs(false)
+	if err != nil {
 		return err
 	}
-	return nil
+	return dao.transaction(func(tx *sql.Tx) (err error) {
+		if _, ok := configs[key]; ok {
+			sqlStr := `update t_config set config_value = ?, updated_at = ? where config_key = ?`
+			_, err = tx.ExecContext(app.ctx, sqlStr, value, time.Now(), key)
+		} else {
+			sqlStr := `insert into t_config(config_key, config_value, created_at, updated_at) values(?, ?, ?, ?)`
+			_, err = tx.ExecContext(app.ctx, sqlStr, key, value, time.Now(), time.Now())
+		}
+		return
+	})
 }

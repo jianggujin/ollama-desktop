@@ -229,15 +229,15 @@ func (o *Ollama) newApiClient() *api.Client {
 	ollamaHost := config.Config.Ollama.Host
 
 	scheme := ollamaHost.Scheme
-	if value, ok := configStore.Get(configOllamaScheme); ok && value != "" {
+	if value, ok := configStore.get(configOllamaScheme); ok && value != "" {
 		scheme = value
 	}
 	host := ollamaHost.Host
-	if value, ok := configStore.Get(configOllamaHost); ok && value != "" {
+	if value, ok := configStore.get(configOllamaHost); ok && value != "" {
 		host = value
 	}
 	port := ollamaHost.Port
-	if value, ok := configStore.Get(configOllamaPort); ok && value != "" {
+	if value, ok := configStore.get(configOllamaPort); ok && value != "" {
 		port = value
 	}
 
@@ -265,19 +265,19 @@ func (o *Ollama) newOllamaClient() *ollama2.Client {
 		username = proxy.Username
 		password = proxy.Password
 	}
-	if value, ok := configStore.Get(configProxyScheme); ok && value != "" {
+	if value, ok := configStore.get(configProxyScheme); ok && value != "" {
 		scheme = value
 	}
-	if value, ok := configStore.Get(configProxyHost); ok && value != "" {
+	if value, ok := configStore.get(configProxyHost); ok && value != "" {
 		host = value
 	}
-	if value, ok := configStore.Get(configProxyPort); ok && value != "" {
+	if value, ok := configStore.get(configProxyPort); ok && value != "" {
 		port = value
 	}
-	if value, ok := configStore.Get(configProxyUsername); ok && value != "" {
+	if value, ok := configStore.get(configProxyUsername); ok && value != "" {
 		username = value
 	}
-	if value, ok := configStore.Get(configProxyPassword); ok && value != "" {
+	if value, ok := configStore.get(configProxyPassword); ok && value != "" {
 		password = value
 	}
 	if scheme != "" && host != "" && port != "" {

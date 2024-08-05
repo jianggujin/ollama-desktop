@@ -196,6 +196,7 @@ function closeViewer() {
   }
   :deep(img) {
     max-width: 100%;
+    cursor: pointer;
   }
 }
 </style>

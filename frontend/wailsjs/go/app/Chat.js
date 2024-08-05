@@ -14,6 +14,14 @@ export function DeleteSession(arg1) {
   return window['go']['app']['Chat']['DeleteSession'](arg1);
 }
 
-export function Sessions(arg1) {
-  return window['go']['app']['Chat']['Sessions'](arg1);
+export function GetSession(arg1) {
+  return window['go']['app']['Chat']['GetSession'](arg1);
+}
+
+export function SessionHistoryMessages(arg1) {
+  return window['go']['app']['Chat']['SessionHistoryMessages'](arg1);
+}
+
+export function Sessions() {
+  return window['go']['app']['Chat']['Sessions']();
 }

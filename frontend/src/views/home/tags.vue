@@ -48,7 +48,7 @@ function handleRefresh() {
 }
 
 function handleDelete(row) {
-  runAsync(() => deleteOllamaModel(row.name), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
+  runAsync(() => deleteOllamaModel(JSON.stringify({ model: row.name })), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
 }
 
 onMounted(() => {

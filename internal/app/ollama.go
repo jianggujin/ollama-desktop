@@ -229,15 +229,15 @@ func (o *Ollama) newApiClient() *api.Client {
 	ollamaHost := config.Config.Ollama.Host
 
 	scheme := ollamaHost.Scheme
-	if value, ok := configStore.get(configOllamaScheme); ok && value != "" {
+	if value, err := configStore.get(configOllamaScheme); err != nil && value != "" {
 		scheme = value
 	}
 	host := ollamaHost.Host
-	if value, ok := configStore.get(configOllamaHost); ok && value != "" {
+	if value, err := configStore.get(configOllamaHost); err != nil && value != "" {
 		host = value
 	}
 	port := ollamaHost.Port
-	if value, ok := configStore.get(configOllamaPort); ok && value != "" {
+	if value, err := configStore.get(configOllamaPort); err != nil && value != "" {
 		port = value
 	}
 
@@ -246,9 +246,7 @@ func (o *Ollama) newApiClient() *api.Client {
 			Scheme: scheme,
 			Host:   net.JoinHostPort(host, port),
 		},
-		Http: &http.Client{
-			Timeout: 60 * time.Second, // 设置超时时间为 30 秒
-		},
+		Http: http.DefaultClient,
 	}
 }
 
@@ -265,19 +263,19 @@ func (o *Ollama) newOllamaClient() *ollama2.Client {
 		username = proxy.Username
 		password = proxy.Password
 	}
-	if value, ok := configStore.get(configProxyScheme); ok && value != "" {
+	if value, err := configStore.get(configProxyScheme); err != nil && value != "" {
 		scheme = value
 	}
-	if value, ok := configStore.get(configProxyHost); ok && value != "" {
+	if value, err := configStore.get(configProxyHost); err != nil && value != "" {
 		host = value
 	}
-	if value, ok := configStore.get(configProxyPort); ok && value != "" {
+	if value, err := configStore.get(configProxyPort); err != nil && value != "" {
 		port = value
 	}
-	if value, ok := configStore.get(configProxyUsername); ok && value != "" {
+	if value, err := configStore.get(configProxyUsername); err != nil && value != "" {
 		username = value
 	}
-	if value, ok := configStore.get(configProxyPassword); ok && value != "" {
+	if value, err := configStore.get(configProxyPassword); err != nil && value != "" {
 		password = value
 	}
 	if scheme != "" && host != "" && port != "" {

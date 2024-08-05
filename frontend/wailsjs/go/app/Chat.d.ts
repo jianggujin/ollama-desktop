@@ -8,4 +8,8 @@ export function CreateSession(arg1:string):Promise<app.SessionModel>;
 
 export function DeleteSession(arg1:string):Promise<string>;
 
-export function Sessions(arg1:boolean):Promise<Array<app.SessionModel>>;
+export function GetSession(arg1:string):Promise<app.SessionModel>;
+
+export function SessionHistoryMessages(arg1:string):Promise<Array<app.ChatMessage>>;
+
+export function Sessions():Promise<Array<app.SessionModel>>;

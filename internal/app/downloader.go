@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"ollama-desktop/internal/log"
 	ollama2 "ollama-desktop/internal/ollama"
 	"sort"
 	"sync"
@@ -66,30 +67,24 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 	ctx, cancel := context.WithCancel(app.ctx)
 	item.cancel = cancel
 	d.emit(pullStatusWait, item)
+	cache := map[string]bool{}
 	err := ollama.newApiClient().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
-		status := ""
-		length := len(item.Bars)
-		if response.Digest != "" {
-			if length == 0 {
-				item.Bars = append(item.Bars, &response)
-			} else if item.Bars[length-1].Digest != response.Digest {
-				item.Bars = append(item.Bars, &response)
-			} else {
-				item.Bars[length-1] = &response
-			}
-		} else if status != response.Status {
-			status = response.Status
+		log.Info().Any("resp", response).Msg("pull")
+		if _, ok := cache[response.Status]; !ok {
 			item.Bars = append(item.Bars, &response)
+			cache[response.Status] = true
+		} else {
+			item.Bars[len(item.Bars)-1] = &response
 		}
 		d.emit(pullStatusPulling, item)
 		return nil
 	})
+	delete(d.tasks, request.Model)
 	if err != nil {
 		d.emit(pullStatusError, item)
 	} else {
 		d.emit(pullStatusSuccess, item)
 	}
-	delete(d.tasks, request.Model)
 }
 
 func (d *DownLoader) emit(status int, item *DownloadItem) {

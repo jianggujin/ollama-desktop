@@ -207,28 +207,34 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 	var messages []*ChatMessage
 	for i := len(questions) - 1; i >= 0; i-- {
 		question := questions[i]
-		messages = append(messages, *ChatMessage{
-			Role:    messageRoleUser,
-			Content: message.QuestionContent,
-			Images:  images,
+		messages = append(messages, &ChatMessage{
+			Id:        question.Id,
+			SessionId: question.SessionId,
+			Role:      messageRoleUser,
+			Content:   question.QuestionContent,
+			Success:   true,
+			CreatedAt: question.CreatedAt,
 		})
 		// 回答
-		answer := answerMap[message.Id]
+		answer := answerMap[question.Id]
 		if answer == nil {
-			// 原则上不存在
+			messages = append(messages, &ChatMessage{
+				Id:        uuid.NewString(),
+				SessionId: question.SessionId,
+				Role:      messageRoleAssistant,
+				Content:   "",
+				Success:   false,
+				CreatedAt: question.CreatedAt,
+			})
 			continue
 		}
-		images = nil
-		if answer.HasImage {
-			images, err = d.findImages(answer.Id, refTypeAnswer)
-			if err != nil {
-				return nil, err
-			}
-		}
-		ollamaMessages = append(ollamaMessages, ollama2.Message{
-			Role:    answer.MessageRole,
-			Content: answer.AnswerContent,
-			Images:  images,
+		messages = append(messages, &ChatMessage{
+			Id:        answer.Id,
+			SessionId: question.SessionId,
+			Role:      answer.MessageRole,
+			Content:   answer.AnswerContent,
+			Success:   answer.IsSuccess,
+			CreatedAt: answer.CreatedAt,
 		})
 	}
 	return messages, nil
@@ -248,40 +254,19 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
 		return nil, err
 	}
-	session, err := dao.findSession(request.SessionId, sessions)
+	session, err := c.GetSession(request.SessionId)
 	if err != nil {
 		return nil, err
 	}
-	isNew := true
-	var question *QuestionModel
-	var images []olm.ImageData
-	// 存在消息编号，查找历史消息
-	if request.QuestionId != "" {
-		question, err = dao.findQuestion(request.QuestionId)
-		if err != nil {
-			return nil, err
-		}
-		if question.HasImage {
-			images, err = dao.findImages(question.Id, refTypeQuestion)
-			if err != nil {
-				return nil, err
-			}
-		}
 
-		isNew = false
-	} else {
-		if err != nil {
-			return nil, err
-		}
-		question = &QuestionModel{
-			Id:              uuid.NewString(),
-			SessionId:       session.Id,
-			QuestionContent: request.Content,
-			AnswerCount:     0,
-			MessageType:     messageTypeChat,
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
-		}
+	question := &QuestionModel{
+		Id:              uuid.NewString(),
+		SessionId:       session.Id,
+		QuestionContent: request.Content,
+		AnswerCount:     0,
+		MessageType:     messageTypeChat,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	answer := &AnswerModel{
@@ -292,27 +277,137 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 		UpdatedAt:  time.Now(),
 	}
 
-	go c.chat(session, question, answer, images, isNew)
+	go c.chat(session, question, answer)
 	return &ConversationResponse{SessionId: session.Id, QuestionId: question.Id, AnswerId: answer.Id}, nil
 }
 
-func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *AnswerModel, images []olm.ImageData, isNew bool) {
-	var answerImages []olm.ImageData
-	defer dao.createAnswer(question, answer, images, answerImages, isNew)
+func (c *Chat) createQuestionAnswer(question *QuestionModel, answer *AnswerModel) error {
+	return dao.transaction(func(tx *sql.Tx) error {
+		// 保存问题
+		sqlStr := `insert into t_question(id, session_id, question_content, answer_count, message_type, created_at, updated_at) 
+                       values(?, ?, ?, ?, ?, ?, ?)`
+		if _, err := tx.ExecContext(app.ctx, sqlStr, question.Id, question.SessionId, question.QuestionContent,
+			question.AnswerCount, question.MessageType, question.CreatedAt, question.UpdatedAt); err != nil {
+			return err
+		}
+
+		sqlStr = `insert into t_answer(id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
+                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason,
+                 is_success, created_at, updated_at) 
+                       values(?, ?, ?, ?, ?, ?, ?, ?)`
+		if _, err := tx.ExecContext(app.ctx, sqlStr, answer.Id, answer.SessionId, answer.QuestionId,
+			answer.AnswerContent, answer.MessageRole, answer.TotalDuration, answer.LoadDuration, answer.PromptEvalCount,
+			answer.PromptEvalDuration, answer.EvalCount, answer.EvalDuration, answer.DoneReason,
+			answer.IsSuccess, answer.CreatedAt, answer.UpdatedAt); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (c *Chat) combineHistoryMessages(session *SessionModel) ([]olm.Message, error) {
+	if session.MessageHistoryCount < 1 {
+		return nil, nil
+	}
+	// 查询历史存在有效回答的消息
+	sqlStr := `select id, session_id, question_content, answer_count, message_type, created_at, updated_at
+            from t_question
+            where session_id = ? and exists (select 1 from t_answer where t_question.id = t_answer.question_id and t_answer.is_success = 1)
+            order by created_at desc
+            limit ?`
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr, session.Id, session.MessageHistoryCount)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var questions []*QuestionModel
+	var questionIds []string
+	values := []interface{}{
+		session.Id,
+	}
+	for rows.Next() {
+		question, err := c.scanQuestion(rows)
+		if err != nil {
+			return nil, err
+		}
+		questionIds = append(questionIds, question.Id)
+		values = append(values, question.Id)
+		questions = append(questions, question)
+	}
+	if len(questions) == 0 {
+		return nil, nil
+	}
+
+	ids := strings.Join(questionIds, ", ")
+	// 查询历史回答
+	sqlStr = fmt.Sprintf(`select id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
+                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason, is_last,
+                 is_success, created_at, updated_at
+            from t_answer
+            where session_id = ? and is_success = 1 and question_id in (%s)`, ids)
+
+	rows, err = dao.db().QueryContext(app.ctx, sqlStr, values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	answerMap := map[string]*AnswerModel{}
+
+	for rows.Next() {
+		answer := &AnswerModel{}
+		if err := rows.Scan(&answer.Id, &answer.SessionId, &answer.QuestionId, &answer.AnswerContent,
+			&answer.MessageRole, &answer.TotalDuration, &answer.LoadDuration, &answer.PromptEvalCount,
+			&answer.PromptEvalDuration, &answer.EvalCount, &answer.EvalDuration, &answer.DoneReason,
+			&answer.IsSuccess, &answer.CreatedAt, &answer.UpdatedAt); err != nil {
+			return nil, err
+		}
+		answerMap[answer.QuestionId] = answer
+	}
+
+	var ollamaMessages []olm.Message
+	//  ) _, message := range questions
+	for i := len(questions) - 1; i >= 0; i-- {
+		message := questions[i]
+		// 回答
+		answer := answerMap[message.Id]
+		if answer == nil {
+			// 原则上不存在
+			continue
+		}
+		// 问题
+		ollamaMessages = append(ollamaMessages, olm.Message{
+			Role:    messageRoleUser,
+			Content: message.QuestionContent,
+			Images:  nil,
+		})
+		// 回答
+		ollamaMessages = append(ollamaMessages, olm.Message{
+			Role:    answer.MessageRole,
+			Content: answer.AnswerContent,
+			Images:  nil,
+		})
+	}
+	return ollamaMessages, nil
+}
+
+func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *AnswerModel) {
+	defer c.createQuestionAnswer(question, answer)
 	var keepAlive *olm.Duration
 	if session.KeepAlive > 0 {
 		keepAlive = &olm.Duration{
 			Duration: session.KeepAlive,
 		}
 	}
-	messages, err := dao.combineHistoryMessages(session, !isNew)
+	messages, err := c.combineHistoryMessages(session)
 	if err != nil {
-		runtime.EventsEmit(app.ctx, answer.Id, nil, err)
+		answer.IsSuccess = false
+		answer.DoneReason = err.Error()
+		runtime.EventsEmit(app.ctx, answer.Id, nil, true, false)
 	}
 	messages = append(messages, olm.Message{
 		Role:    messageRoleUser,
 		Content: question.QuestionContent,
-		Images:  images,
+		Images:  nil,
 	})
 	var buffer bytes.Buffer
 	err = ollama.newApiClient().Chat(app.ctx, &olm.ChatRequest{
@@ -325,9 +420,6 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 	}, func(response olm.ChatResponse) error {
 		message := response.Message
 		buffer.WriteString(message.Content)
-		if len(message.Images) > 0 {
-			answerImages = append(answerImages, message.Images...)
-		}
 		if response.Done {
 			answer.MessageRole = message.Role
 			answer.UpdatedAt = response.CreatedAt
@@ -342,10 +434,12 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 			answer.EvalDuration = metrics.EvalDuration
 			question.AnswerCount = question.AnswerCount + 1
 		}
-		runtime.EventsEmit(app.ctx, answer.Id, response)
+		runtime.EventsEmit(app.ctx, answer.Id, buffer.String(), response.Done, true)
 		return nil
 	})
 	if err != nil {
-		runtime.EventsEmit(app.ctx, answer.Id, nil, err)
+		answer.IsSuccess = false
+		answer.DoneReason = err.Error()
+		runtime.EventsEmit(app.ctx, answer.Id, nil, true, false)
 	}
 }

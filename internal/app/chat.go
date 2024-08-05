@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	olm "ollama-desktop/internal/ollama"
+	"strings"
 	"time"
 )
 
@@ -134,19 +136,27 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 
 	var timeMarker time.Time
 	if request.NextMarker != "" {
-
-	} else {
+		// 查询历史存在有效回答的消息
+		sqlStr := `select created_at from t_question where session_id = ? and id = ?`
+		rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, request.NextMarker)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		if rows.Next() {
+			rows.Scan(&timeMarker)
+		}
+	}
+	if timeMarker.IsZero() {
 		timeMarker = time.Now()
 	}
-	time.ParseInLocation(, request.NextMarker, time.Local)
 
-	// 查询历史存在有效回答的消息
 	sqlStr := `select id, session_id, question_content, answer_count, message_type, created_at, updated_at
             from t_question
-            where session_id = ? and created_at < select
+            where session_id = ? and created_at < ?
             order by created_at desc
             limit ?`
-	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, 30)
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, timeMarker, 30)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +167,7 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 		request.SessionId,
 	}
 	for rows.Next() {
-		question, err := d.scanQuestion(rows)
+		question, err := c.scanQuestion(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +175,63 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 		values = append(values, question.Id)
 		questions = append(questions, question)
 	}
-	return dao.sessionHistoryMessages(request.SessionId, request.NextMarker)
+	if len(questionIds) == 0 {
+		return nil, err
+	}
+
+	ids := strings.Join(questionIds, ", ")
+	// 查询历史回答
+	sqlStr = fmt.Sprintf(`select id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
+                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason, is_success, created_at, updated_at
+            from t_answer
+            where session_id = ? and question_id in (%s)`, ids)
+
+	rows, err = dao.db().QueryContext(app.ctx, sqlStr, values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	answerMap := map[string]*AnswerModel{}
+
+	for rows.Next() {
+		answer := &AnswerModel{}
+		if err := rows.Scan(&answer.Id, &answer.SessionId, &answer.QuestionId, &answer.AnswerContent,
+			&answer.MessageRole, &answer.TotalDuration, &answer.LoadDuration, &answer.PromptEvalCount,
+			&answer.PromptEvalDuration, &answer.EvalCount, &answer.EvalDuration, &answer.DoneReason,
+			&answer.IsSuccess, &answer.CreatedAt, &answer.UpdatedAt); err != nil {
+			return nil, err
+		}
+		answerMap[answer.QuestionId] = answer
+	}
+
+	var messages []*ChatMessage
+	for i := len(questions) - 1; i >= 0; i-- {
+		question := questions[i]
+		messages = append(messages, *ChatMessage{
+			Role:    messageRoleUser,
+			Content: message.QuestionContent,
+			Images:  images,
+		})
+		// 回答
+		answer := answerMap[message.Id]
+		if answer == nil {
+			// 原则上不存在
+			continue
+		}
+		images = nil
+		if answer.HasImage {
+			images, err = d.findImages(answer.Id, refTypeAnswer)
+			if err != nil {
+				return nil, err
+			}
+		}
+		ollamaMessages = append(ollamaMessages, ollama2.Message{
+			Role:    answer.MessageRole,
+			Content: answer.AnswerContent,
+			Images:  images,
+		})
+	}
+	return messages, nil
 }
 
 type ConversationResponse struct {

@@ -33,8 +33,8 @@
               :status="bar.status"
               text-inside
               :stroke-width="20"
-              striped
-              striped-flow
+              :striped="bar.status != 'success'"
+              :striped-flow="bar.status != 'success'"
               :duration="20">
               <template #default="{ percentage }">
                 <div style="width: 100%;display: flex;align-items: center;">

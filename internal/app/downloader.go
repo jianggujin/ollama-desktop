@@ -29,14 +29,15 @@ type DownloadItem struct {
 	Model    string `json:"model"`
 	Insecure bool   `json:"insecure,omitempty"`
 	// 进度条数据
-	Bars   []*ProgressBar     `json:"bars"`
-	cancel context.CancelFunc `json:"-"`
+	Bars     []*ProgressBar     `json:"bars"`
+	Canceled bool               `json:"-"`
+	cancel   context.CancelFunc `json:"-"`
 }
 
 type ProgressBar struct {
-	Name       string `json:"name"`
-	Percentage int64  `json:"percentage"`
-	Status     string `json:"status"`
+	Name       string  `json:"name"`
+	Percentage float64 `json:"percentage"`
+	Status     string  `json:"status"`
 }
 
 func (p *ProgressBar) stop() {
@@ -44,7 +45,7 @@ func (p *ProgressBar) stop() {
 	p.Percentage = 100
 }
 
-func (p *ProgressBar) set(percentage int64) {
+func (p *ProgressBar) set(percentage float64) {
 	p.Percentage = percentage
 	if percentage >= 100 {
 		p.Status = "success"
@@ -108,7 +109,8 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 				item.Bars = append(item.Bars, bar)
 				cache[resp.Digest] = bar
 			}
-			bar.set(resp.Completed / resp.Total * 100)
+			percentage := float64(resp.Completed) / float64(resp.Total) * 100
+			bar.set(percentage)
 		} else if status != resp.Status {
 			if spinner != nil {
 				spinner.stop()
@@ -129,7 +131,11 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 
 	if err != nil {
 		delete(d.tasks, request.Model)
-		d.emit(pullStatusError, item)
+		if !item.Canceled {
+			d.emit(pullStatusError, item)
+		} else {
+			d.emit(pullStatusPulling, item)
+		}
 	} else {
 		if spinner != nil {
 			spinner.stop()
@@ -139,7 +145,11 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 		<-time.After(2 * time.Second)
 
 		delete(d.tasks, request.Model)
-		d.emit(pullStatusSuccess, item)
+		if !item.Canceled {
+			d.emit(pullStatusSuccess, item)
+		} else {
+			d.emit(pullStatusPulling, item)
+		}
 	}
 }
 
@@ -162,6 +172,7 @@ func (d *DownLoader) Cancel(model string) {
 	}
 	if item, ok := d.tasks[model]; ok {
 		if item.cancel != nil {
+			item.Canceled = true
 			item.cancel()
 		}
 	}

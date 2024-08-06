@@ -57,10 +57,26 @@ export namespace app {
 	        this.messageId = source["messageId"];
 	    }
 	}
+	export class ProgressBar {
+	    name: string;
+	    percentage: number;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProgressBar(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.percentage = source["percentage"];
+	        this.status = source["status"];
+	    }
+	}
 	export class DownloadItem {
 	    model: string;
 	    insecure?: boolean;
-	    bars: ollama.ProgressResponse[];
+	    bars: ProgressBar[];
 	
 	    static createFrom(source: any = {}) {
 	        return new DownloadItem(source);
@@ -70,7 +86,7 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.model = source["model"];
 	        this.insecure = source["insecure"];
-	        this.bars = this.convertValues(source["bars"], ollama.ProgressResponse);
+	        this.bars = this.convertValues(source["bars"], ProgressBar);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -109,11 +125,7 @@ export namespace app {
 	    modelName: string;
 	    prompts?: string;
 	    messageHistoryCount: number;
-	    stream?: boolean;
-	    responseFormat?: string;
-	    keepAlive?: number;
 	    options?: string;
-	    sessionType: string;
 	    // Go type: time
 	    createdAt: any;
 	    // Go type: time
@@ -130,11 +142,7 @@ export namespace app {
 	        this.modelName = source["modelName"];
 	        this.prompts = source["prompts"];
 	        this.messageHistoryCount = source["messageHistoryCount"];
-	        this.stream = source["stream"];
-	        this.responseFormat = source["responseFormat"];
-	        this.keepAlive = source["keepAlive"];
 	        this.options = source["options"];
-	        this.sessionType = source["sessionType"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	    }

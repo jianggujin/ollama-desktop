@@ -387,12 +387,6 @@ func (c *Chat) combineHistoryMessages(session *SessionModel) ([]olm.Message, err
 
 func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *AnswerModel) {
 	defer c.createQuestionAnswer(question, answer)
-	var keepAlive *olm.Duration
-	if session.KeepAlive > 0 {
-		keepAlive = &olm.Duration{
-			Duration: session.KeepAlive,
-		}
-	}
 	messages, err := c.combineHistoryMessages(session)
 	if err != nil {
 		answer.IsSuccess = false
@@ -406,12 +400,9 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 	})
 	var buffer bytes.Buffer
 	err = ollama.newApiClient().Chat(app.ctx, &olm.ChatRequest{
-		Model:     session.ModelName,
-		Messages:  messages,
-		Stream:    &session.UseStream,
-		Format:    session.ResponseFormat,
-		KeepAlive: keepAlive,
-		Options:   nil,
+		Model:    session.ModelName,
+		Messages: messages,
+		Options:  nil,
 	}, func(response olm.ChatResponse) error {
 		message := response.Message
 		buffer.WriteString(message.Content)

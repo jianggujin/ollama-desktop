@@ -55,29 +55,13 @@
             type="primary"/>
         </template>
       </div>
-       <el-dialog v-model="showSessionDialog" title="新建会话" width="500" >
-        <el-form ref="sessionFormRef" :model="sessionFormData" :rules="sessionFormRule" label-width="auto" status-icon>
-          <el-form-item label="会话名称" prop="sessionName">
-            <el-input v-model="sessionFormData.sessionName" />
-          </el-form-item>
-          <el-form-item label="模型名称" prop="modelName">
-            <el-select v-model="sessionFormData.modelName" placeholder="请选择模型" style="width: 100%">
-              <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
-            </el-select>
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button @click="showSessionDialog = false">取消</el-button>
-            <el-button type="primary" @click="handleCreateSession">确认</el-button>
-          </div>
-        </template>
-      </el-dialog>
+      <create-sesion-dialog ref="createSesionDialog"/>
     </el-main>
   </el-container>
 </template>
 
 <script setup>
+import CreateSesionDialog from './create-sesion-dialog.vue'
 import { Promotion, Loading, DocumentAdd, Delete } from '@element-plus/icons-vue'
 import { throttle } from 'lodash'
 import marked from '~/utils/markdown.js'
@@ -93,6 +77,8 @@ const sessionId = ref('')
 const messages = ref([])
 const models = ref([])
 const showSessionDialog = ref(false)
+
+const createSesionDialog = ref(null)
 
 const question = ref('')
 const answering = ref(false)
@@ -242,9 +228,10 @@ watch(() => sessionId.value, newValue => {
 })
 
 function showCreateSession() {
-  sessionFormData.value = { sessionName: '', modelName: '' }
-  showSessionDialog.value = true
-  loadModels()
+  // sessionFormData.value = { sessionName: '', modelName: '' }
+  // showSessionDialog.value = true
+  // loadModels()
+  createSesionDialog.value.showDialog()
 }
 
 function handleCreateSession() {

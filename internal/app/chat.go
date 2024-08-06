@@ -25,16 +25,14 @@ type Chat struct {
 func (c *Chat) scanSession(rows *sql.Rows) (*SessionModel, error) {
 	session := &SessionModel{}
 	if err := rows.Scan(&session.Id, &session.SessionName, &session.ModelName, &session.Prompts,
-		&session.MessageHistoryCount, &session.UseStream, &session.ResponseFormat, &session.KeepAlive,
-		&session.Options, &session.SessionType, &session.CreatedAt, &session.UpdatedAt); err != nil {
+		&session.MessageHistoryCount, session.Options, &session.CreatedAt, &session.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return session, nil
 }
 
 func (c *Chat) Sessions() ([]*SessionModel, error) {
-	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
-                  options, session_type, created_at, updated_at
+	sqlStr := `select id, session_name, model_name, prompts, message_history_count, options, created_at, updated_at
             from t_session
             order by created_at desc`
 	rows, err := dao.db().QueryContext(app.ctx, sqlStr)
@@ -62,11 +60,9 @@ func (c *Chat) CreateSession(requestStr string) (*SessionModel, error) {
 	session.CreatedAt = time.Now()
 	session.UpdatedAt = session.CreatedAt
 
-	sqlStr := `insert into t_session(id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
-                  options, session_type, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	sqlStr := `insert into t_session(id, session_name, model_name, prompts, message_history_count, options, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := dao.db().ExecContext(app.ctx, sqlStr, session.Id, session.SessionName, session.ModelName, session.Prompts,
-		session.MessageHistoryCount, session.UseStream, session.ResponseFormat, session.KeepAlive,
-		session.Options, session.SessionType, session.CreatedAt, session.UpdatedAt)
+		session.MessageHistoryCount, session.Options, session.CreatedAt, session.UpdatedAt)
 	return session, err
 }
 
@@ -92,8 +88,7 @@ func (c *Chat) DeleteSession(id string) (string, error) {
 }
 
 func (c *Chat) GetSession(id string) (*SessionModel, error) {
-	sqlStr := `select id, session_name, model_name, prompts, message_history_count, use_stream, response_format, keep_alive,
-                  options, session_type, created_at, updated_at
+	sqlStr := `select id, session_name, model_name, prompts, message_history_count, options, created_at, updated_at
             from t_session
             where id = ?`
 	rows, err := dao.db().QueryContext(app.ctx, sqlStr, id)

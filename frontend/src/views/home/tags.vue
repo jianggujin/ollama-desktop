@@ -28,8 +28,9 @@ import { Refresh, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { List, Delete as deleteOllamaModel } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
-import { runAsync } from '~/utils/wrapper.js'
+import { runAsync, runQuietly } from '~/utils/wrapper.js'
 import { humanize } from '~/utils/humanize.js'
+import { EventsOn, EventsOff } from '@/runtime/runtime.js'
 
 const ollamaStore = useOllamaStore()
 const list = ref([])
@@ -53,6 +54,11 @@ function handleDelete(row) {
 
 onMounted(() => {
   handleRefresh()
+  runQuietly(() => { EventsOn('model_refresh', handleRefresh) })
+})
+
+onUnmounted(() => {
+  runQuietly(() => { EventsOff('model_refresh') })
 })
 </script>
 

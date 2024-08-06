@@ -58,18 +58,14 @@ type ConfigModel struct {
 }
 
 type SessionModel struct {
-	Id                  string        `json:"id"`
-	SessionName         string        `json:"sessionName"`
-	ModelName           string        `json:"modelName"`
-	Prompts             string        `json:"prompts,omitempty"`
-	MessageHistoryCount int           `json:"messageHistoryCount"`
-	UseStream           bool          `json:"stream,omitempty"`
-	ResponseFormat      string        `json:"responseFormat,omitempty"`
-	KeepAlive           time.Duration `json:"keepAlive,omitempty"`
-	Options             string        `json:"options,omitempty"`
-	SessionType         string        `json:"sessionType"`
-	CreatedAt           time.Time     `json:"createdAt"`
-	UpdatedAt           time.Time     `json:"updatedAt"`
+	Id                  string    `json:"id"`
+	SessionName         string    `json:"sessionName"`
+	ModelName           string    `json:"modelName"`
+	Prompts             string    `json:"prompts,omitempty"`
+	MessageHistoryCount int       `json:"messageHistoryCount"`
+	Options             string    `json:"options,omitempty"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
 }
 
 type QuestionModel struct {

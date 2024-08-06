@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"ollama-desktop/internal/log"
 	ollama2 "ollama-desktop/internal/ollama"
 	"sort"
 	"sync"
+	"time"
 )
 
 var downloader = DownLoader{}
@@ -21,14 +22,35 @@ const (
 	pullEventList     = "pull_list"
 	pullEventSuccess  = "pull_success"
 	pullEventError    = "pull_error"
+	eventModelRefresh = "model_refresh"
 )
 
 type DownloadItem struct {
 	Model    string `json:"model"`
 	Insecure bool   `json:"insecure,omitempty"`
 	// 进度条数据
-	Bars   []*ollama2.ProgressResponse `json:"bars"`
-	cancel context.CancelFunc          `json:"-"`
+	Bars   []*ProgressBar     `json:"bars"`
+	cancel context.CancelFunc `json:"-"`
+}
+
+type ProgressBar struct {
+	Name       string `json:"name"`
+	Percentage int64  `json:"percentage"`
+	Status     string `json:"status"`
+}
+
+func (p *ProgressBar) stop() {
+	p.Status = "success"
+	p.Percentage = 100
+}
+
+func (p *ProgressBar) set(percentage int64) {
+	p.Percentage = percentage
+	if percentage >= 100 {
+		p.Status = "success"
+	} else {
+		p.Status = ""
+	}
 }
 
 type DownLoader struct {
@@ -67,22 +89,56 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 	ctx, cancel := context.WithCancel(app.ctx)
 	item.cancel = cancel
 	d.emit(pullStatusWait, item)
-	cache := map[string]bool{}
-	err := ollama.newApiClient().Pull(ctx, request, func(response ollama2.ProgressResponse) error {
-		log.Info().Any("resp", response).Msg("pull")
-		if _, ok := cache[response.Status]; !ok {
-			item.Bars = append(item.Bars, &response)
-			cache[response.Status] = true
-		} else {
-			item.Bars[len(item.Bars)-1] = &response
+
+	cache := make(map[string]*ProgressBar)
+	var status string
+	var spinner *ProgressBar
+	err := ollama.newApiClient().Pull(ctx, request, func(resp ollama2.ProgressResponse) error {
+		if resp.Digest != "" {
+			if spinner != nil {
+				spinner.stop()
+			}
+			bar, ok := cache[resp.Digest]
+			if !ok {
+				bar = &ProgressBar{
+					Name:       fmt.Sprintf("pulling %s...", resp.Digest[7:19]),
+					Percentage: 0,
+					Status:     "",
+				}
+				item.Bars = append(item.Bars, bar)
+				cache[resp.Digest] = bar
+			}
+			bar.set(resp.Completed / resp.Total * 100)
+		} else if status != resp.Status {
+			if spinner != nil {
+				spinner.stop()
+			}
+
+			status = resp.Status
+
+			spinner = &ProgressBar{
+				Name:       status,
+				Percentage: 0,
+				Status:     "",
+			}
+			item.Bars = append(item.Bars, spinner)
 		}
 		d.emit(pullStatusPulling, item)
 		return nil
 	})
-	delete(d.tasks, request.Model)
+
 	if err != nil {
+		delete(d.tasks, request.Model)
 		d.emit(pullStatusError, item)
 	} else {
+		if spinner != nil {
+			spinner.stop()
+		}
+		d.emit(pullStatusPulling, item)
+
+		<-time.After(2 * time.Second)
+
+		delete(d.tasks, request.Model)
 		d.emit(pullStatusSuccess, item)
 	}
 }
@@ -94,6 +150,7 @@ func (d *DownLoader) emit(status int, item *DownloadItem) {
 	switch status {
 	case pullStatusSuccess:
 		runtime.EventsEmit(app.ctx, pullEventSuccess, item)
+		runtime.EventsEmit(app.ctx, eventModelRefresh)
 	case pullStatusError:
 		runtime.EventsEmit(app.ctx, pullEventError, item)
 	}
@@ -108,7 +165,7 @@ func (d *DownLoader) Cancel(model string) {
 			item.cancel()
 		}
 	}
-	return
+	runtime.EventsEmit(app.ctx, pullEventList, d.List())
 }
 
 func (d *DownLoader) List() []*DownloadItem {

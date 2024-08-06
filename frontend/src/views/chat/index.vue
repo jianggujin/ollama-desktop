@@ -17,7 +17,7 @@
         </div>
       </el-scrollbar>
       <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
-        <el-button :icon="DocumentAdd" @click="handleCreateSession">添加会话</el-button>
+        <el-button :icon="DocumentAdd" @click="showCreateSession">添加会话</el-button>
       </div>
     </el-aside>
     <el-main style="display: flex;flex-direction: column;">
@@ -55,6 +55,24 @@
             type="primary"/>
         </template>
       </div>
+       <el-dialog v-model="showSessionDialog" title="新建会话" width="500" >
+        <el-form ref="sessionFormRef" :model="sessionFormData" :rules="sessionFormRule" label-width="auto" status-icon>
+          <el-form-item label="会话名称" prop="sessionName">
+            <el-input v-model="sessionFormData.sessionName" />
+          </el-form-item>
+          <el-form-item label="模型名称" prop="modelName">
+            <el-select v-model="sessionFormData.modelName" placeholder="请选择模型" style="width: 100%">
+              <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="showSessionDialog = false">取消</el-button>
+            <el-button type="primary" @click="handleCreateSession">确认</el-button>
+          </div>
+        </template>
+      </el-dialog>
     </el-main>
   </el-container>
 </template>
@@ -65,35 +83,43 @@ import { throttle } from 'lodash'
 import marked from '~/utils/markdown.js'
 import { ElMessage } from 'element-plus'
 import { BrowserOpenURL } from '@/runtime/runtime.js'
+import { Sessions, SessionHistoryMessages, DeleteSession, CreateSession, Conversation } from '@/go/app/Chat.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { List as listModels } from '@/go/app/Ollama.js'
+import { humanize } from '~/utils/humanize.js'
 
-// type SessionModel struct {
-// 	Id                  string        `json:"id"`
-// 	SessionName         string        `json:"sessionName"`
-// 	ModelName           string        `json:"modelName"`
-// 	Prompts             string        `json:"prompts,omitempty"`
-// 	MessageHistoryCount int           `json:"messageHistoryCount"`
-// 	UseStream           bool          `json:"stream,omitempty"`
-// 	ResponseFormat      string        `json:"responseFormat,omitempty"`
-// 	KeepAlive           time.Duration `json:"keepAlive,omitempty"`
-// 	Options             string        `json:"options,omitempty"`
-// 	SessionType         string        `json:"sessionType"`
-// 	CreatedAt           time.Time     `json:"createdAt"`
-// 	UpdatedAt           time.Time     `json:"updatedAt"`
-// }
 const sessions = ref([])
 const sessionId = ref('')
 const messages = ref([])
+const models = ref([])
+const showSessionDialog = ref(false)
 
 const question = ref('')
 const answering = ref(false)
+const canSendQuestion = computed(() => !answering.value && !isAllWhitespace(question.value))
 const chatScrollbar = ref(null)
 const chatContent = ref(null)
 const showViewer = ref(false)
 const previewSrcList = ref([])
+
+const sessionFormRef = ref(null)
+const sessionFormData = ref({})
+const sessionFormRule = ref({
+  sessionName: [
+    { required: true, message: '请输入会话名称', trigger: 'blur' },
+    { max: 50, message: '会话名称长度不能大于50', trigger: 'blur' }
+  ],
+  modelName: [{ required: true, message: '请选择会话模型', trigger: 'change' }]
+})
+
 let prevOverflow = ''
 
-let chatContentMacContent = -1
+function closeViewer() {
+  document.body.style.overflow = prevOverflow
+  showViewer.value = false
+}
+
+let chatContentMaxHeight = -1
 
 let chatContainer
 function handleChatClick(event) {
@@ -115,15 +141,15 @@ const scrollToBottom = throttle(() => {
   nextTick(() => {
     const chatScrollbarHeight = (chatScrollbar.value?.$el || chatScrollbar.value)?.clientHeight || 0
     const chatContentHeight = (chatContent.value?.$el || chatContent.value)?.clientHeight || 0
-    if (chatContentHeight > chatContentMacContent) {
-      chatContentMacContent = chatContentHeight
+    if (chatContentHeight > chatContentMaxHeight) {
+      chatContentMaxHeight = chatContentHeight
       chatScrollbar.value?.setScrollTop(chatContentHeight - chatScrollbarHeight)
     }
   })
 }, 500)
 
 function forceScrollToBottom() {
-  chatContentMacContent = -1
+  chatContentMaxHeight = -1
   scrollToBottom()
 }
 
@@ -131,8 +157,31 @@ function isAllWhitespace(str) {
   return /^\s*$/.test(str)
 }
 
-const answer = ref('')
-const canSendQuestion = computed(() => !answering.value && !isAllWhitespace(question.value))
+function loadModels() {
+  // 获取模型信息
+  runAsync(listModels, ({ models }) => {
+    models.value = (models || []).map(item => {
+      item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
+        new Date(item.modified_at))
+      item.formatSize = humanize.filesize(item.size)
+      item.parameterSize = item.details?.parameter_size
+      item.quantizationLevel = item.details?.quantization_level
+      return item
+    })
+  }, _ => { ElMessage.error('获取本地模型列表失败') })
+}
+
+function loadSessions() {
+  // 获取会话信息
+  runAsync(Sessions, data => {
+    sessions.value = data
+    if (data.length) {
+      sessionId.value = data.find(item => item.id === sessionId.value)?.id || data[0].id
+    } else {
+      showCreateSession()
+    }
+  }, _ => { ElMessage.error('获取会话列表失败') })
+}
 
 function handleQuestionKeydown(event) {
   if (event.altKey && event.key === 'Enter') {
@@ -160,7 +209,7 @@ function sendQuestion() {
   //   answer.value = marked.parse(body)
   //   scrollToBottom()
   //   answering.value = false
-  //   chatContentMacContent = -1
+  //   chatContentMaxHeight = -1
   //   clearInterval(id)
   // }, 50)
 }
@@ -168,26 +217,48 @@ function sendQuestion() {
 onMounted(() => {
   chatContainer = (chatContent.value?.$el || chatContent.value)
   chatContainer.addEventListener('click', handleChatClick)
+
+  loadSessions()
+  loadModels()
 })
 
 onUnmounted(() => {
   chatContainer.removeEventListener('click', handleChatClick)
 })
 
-function closeViewer() {
-  document.body.style.overflow = prevOverflow
-  showViewer.value = false
+function loadSessionMessages() {
+  runAsync(() => SessionHistoryMessages(), data => {
+    data = data || []
+    messages.value.unshift(...data)
+  }, _ => { ElMessage.error('获取会话历史消息失败') })
 }
 
 watch(() => sessionId.value, newValue => {
   messages.value = []
+  if (!newValue) {
+    return
+  }
+  loadSessionMessages()
 })
 
-let index = 1
+function showCreateSession() {
+  sessionFormData.value = { sessionName: '', modelName: '' }
+  showSessionDialog.value = true
+  loadModels()
+}
+
 function handleCreateSession() {
-  const id = String(index++)
-  sessions.value.push({ id, sessionName: 'dsdsds' + id, modelName: 'qwen:0.5B' })
-  sessionId.value = id
+  sessionFormRef.value?.validate().then(_ => {
+    runAsync(() => CreateSession(JSON.stringify({
+      sessionName: sessionFormData.value.sessionName,
+      modelName: sessionFormData.value.modelName,
+      prompts: '',
+      messageHistoryCount: 5
+    })), data => {
+      data = data || []
+      messages.value.unshift(...data)
+    }, _ => { ElMessage.error('添加会话失败') })
+  })
 }
 
 function handleDeleteSesson(session, index) {

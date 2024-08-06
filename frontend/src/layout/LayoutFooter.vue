@@ -20,17 +20,25 @@
             <div style="display: flex;align-items: center;">
               <div class="line-1" style="font-size: 1.1rem;width: calc(100% - 30px);">{{ item.model }}</div>
               <div style="display: flex;align-items: center;justify-content: center;width: 30px;">
-                <el-popconfirm :title="`确定要取消下载?`" @confirm="handleDeleteDownload">
+                <el-popconfirm :title="`确定要取消下载?`" @confirm="handleDeleteDownload(item)">
                   <template #reference>
                     <el-button :icon="Delete" size="large" link type="danger"></el-button>
                   </template>
                 </el-popconfirm>
               </div>
             </div>
-            <el-progress v-for="(bar, bi) in item.bars" :key="bi" :percentage="(!bar.completed ? (bar.total ? (bar.completed/total) : 1) : 0) * 100" text-inside :stroke-width="20" striped striped-flow :duration="20">
+            <el-progress v-for="(bar, bi) in item.bars"
+              :key="bi"
+              :percentage="bar.percentage"
+              :status="bar.status"
+              text-inside
+              :stroke-width="20"
+              striped
+              striped-flow
+              :duration="20">
               <template #default="{ percentage }">
                 <div style="width: 100%;display: flex;align-items: center;">
-                  <span style="margin-left: 10px;">{{ bar.status }}</span>
+                  <span style="margin-left: 10px;">{{ bar.name }}</span>
                   <span style="margin-left: auto;margin-right: 10px;">{{ percentage.toFixed(2) }}%</span>
                 </div>
               </template>
@@ -53,10 +61,13 @@ import { Heartbeat, Start } from '@/go/app/Ollama.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
 import { useOllamaStore } from '~/store/ollama.js'
 import { useDownloaderStore } from '~/store/downloader.js'
+import { Cancel } from '@/go/app/DownLoader.js'
 
 const ollamaStore = useOllamaStore()
 const downloaderStore = useDownloaderStore()
 const drawer = ref(false)
+
+let autoStarted = false
 
 onMounted(() => {
   runQuietly(Heartbeat)
@@ -65,6 +76,10 @@ onMounted(() => {
       ollamaStore.installed = installed
       ollamaStore.started = started
       ollamaStore.canStart = canStart
+      if (canStart && !autoStarted) {
+        autoStarted = true
+        startOllamaApp()
+      }
     })
   })
   runQuietly(() => { EventsOn('pull_list', list => { downloaderStore.list = list }) })
@@ -104,8 +119,9 @@ function openHomePage() {
   runQuietly(() => { BrowserOpenURL('https://www.jianggujin.com') })
 }
 
-function handleDeleteDownload() {
-
+function handleDeleteDownload(item) {
+  runAsync(() => Cancel(item.model), () => { ElMessage.success(`取消模型${item.model}下载成功`) },
+    () => { ElMessage.error(`取消模型${item.model}下载失败`) })
 }
 </script>
 

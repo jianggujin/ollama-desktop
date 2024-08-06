@@ -156,8 +156,8 @@ function handleCopyCommand() {
 
 function handleDownload() {
   runAsync(() => Pull(JSON.stringify({ model: props.modelTag })),
-    _ => ElMessage.error('已加入下载队列'),
-    _ => ElMessage.error('加入下载队列失败'))
+    _ => ElMessage.success('模型' + props.modelTag + '已加入下载队列'),
+    _ => ElMessage.error('模型' + props.modelTag + '加入下载队列失败'))
 }
 
 function closeViewer() {

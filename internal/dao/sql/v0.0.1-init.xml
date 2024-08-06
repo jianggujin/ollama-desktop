@@ -17,13 +17,7 @@
         <column columnName="prompts" dataType="VARCHAR" maxLength="100" remarks="提示词"/>
         <column columnName="message_history_count" dataType="INT" defaultOriginValue="3" nullable="false"
                 remarks="会话历史轮次"/>
-        <column columnName="use_stream" dataType="BOOLEAN" defaultOriginValue="1" remarks="是否使用流式返回"/>
-        <column columnName="response_format" dataType="VARCHAR" maxLength="100" defaultValue="json"
-                remarks="响应数据格式"/>
-        <column columnName="keep_alive" dataType="BIGINT" remarks="模型在内存中存活时间"/>
         <column columnName="options" dataType="TEXT" remarks="扩展选项"/>
-        <column columnName="session_type" dataType="VARCHAR" maxLength="50" defaultValue="chat" nullable="false"
-                remarks="会话类型"/>
         <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
     </createTable>

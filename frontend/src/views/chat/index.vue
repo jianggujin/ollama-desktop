@@ -1,24 +1,7 @@
 <template>
   <el-container id="loading-wrapper">
-    <el-aside width="250px" style="display: flex;flex-direction: column;">
-      <el-scrollbar>
-        <div v-for="(session, index) in sessions" :key="index" :class="{'session-item':true, 'is-active': session.id == sessionId}" @click="sessionId = session.id">
-          <div style="display: flex;flex-direction: column;width: calc(100% - 30px);">
-            <div class="line-1" style="font-size: 1.1rem;">{{ session.sessionName }}</div>
-            <div class="line-1" style="text-align: right;margin-top: 5px;">{{ session.modelName }}</div>
-          </div>
-          <div style="display: flex;align-items: center;justify-content: center;width: 30px;">
-            <el-popconfirm :title="`确定要删除会话?`" @confirm="handleDeleteSesson(session, index)">
-              <template #reference>
-                <el-button :icon="Delete" size="large" link type="danger"></el-button>
-              </template>
-            </el-popconfirm>
-          </div>
-        </div>
-      </el-scrollbar>
-      <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
-        <el-button :icon="DocumentAdd" @click="showCreateSession">添加会话</el-button>
-      </div>
+    <el-aside width="250px">
+      <session-panel @change="handleSessionChange"/>
     </el-aside>
     <el-main style="display: flex;flex-direction: column;">
       <el-scrollbar style="flex: 1;" ref="chatScrollbar">
@@ -55,73 +38,45 @@
             type="primary"/>
         </template>
       </div>
-      <create-sesion-dialog ref="createSesionDialog"/>
     </el-main>
   </el-container>
 </template>
 
 <script setup>
-import CreateSesionDialog from './create-sesion-dialog.vue'
-import { Promotion, Loading, DocumentAdd, Delete } from '@element-plus/icons-vue'
+import SesionPanel from './session-panel.vue'
+import { Promotion, Loading } from '@element-plus/icons-vue'
 import { throttle } from 'lodash'
 import marked from '~/utils/markdown.js'
 import { ElMessage } from 'element-plus'
 import { BrowserOpenURL } from '@/runtime/runtime.js'
-import { Sessions, SessionHistoryMessages, DeleteSession, CreateSession, Conversation } from '@/go/app/Chat.js'
+import { SessionHistoryMessages, Conversation } from '@/go/app/Chat.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
-import { List as listModels } from '@/go/app/Ollama.js'
-import { humanize } from '~/utils/humanize.js'
 
-const sessions = ref([])
 const sessionId = ref('')
-const messages = ref([])
-const models = ref([])
-const showSessionDialog = ref(false)
 
-const createSesionDialog = ref(null)
+const messages = ref([])
 
 const question = ref('')
 const answering = ref(false)
 const canSendQuestion = computed(() => !answering.value && !isAllWhitespace(question.value))
+
 const chatScrollbar = ref(null)
 const chatContent = ref(null)
-const showViewer = ref(false)
-const previewSrcList = ref([])
 
-const sessionFormRef = ref(null)
-const sessionFormData = ref({})
-const sessionFormRule = ref({
-  sessionName: [
-    { required: true, message: '请输入会话名称', trigger: 'blur' },
-    { max: 50, message: '会话名称长度不能大于50', trigger: 'blur' }
-  ],
-  modelName: [{ required: true, message: '请选择会话模型', trigger: 'change' }]
+function handleSessionChange(value) {
+  sessionId.value = value
+}
+
+watch(() => sessionId.value, newValue => {
+  messages.value = []
+  if (!newValue) {
+    return
+  }
+  loadSessionMessages()
 })
 
-let prevOverflow = ''
-
-function closeViewer() {
-  document.body.style.overflow = prevOverflow
-  showViewer.value = false
-}
-
 let chatContentMaxHeight = -1
-
 let chatContainer
-function handleChatClick(event) {
-  if (event.target.tagName.toLowerCase() === 'a') {
-    event.preventDefault()
-    const href = event.target.getAttribute('href')
-    runQuietly(() => { BrowserOpenURL(href) })
-  } else if (event.target.tagName.toLowerCase() === 'img') {
-    event.preventDefault()
-    const src = event.target.getAttribute('src')
-    previewSrcList.value = [src]
-    prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    showViewer.value = true
-  }
-}
 
 const scrollToBottom = throttle(() => {
   nextTick(() => {
@@ -143,37 +98,19 @@ function isAllWhitespace(str) {
   return /^\s*$/.test(str)
 }
 
-function loadModels() {
-  // 获取模型信息
-  runAsync(listModels, ({ models }) => {
-    models.value = (models || []).map(item => {
-      item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
-        new Date(item.modified_at))
-      item.formatSize = humanize.filesize(item.size)
-      item.parameterSize = item.details?.parameter_size
-      item.quantizationLevel = item.details?.quantization_level
-      return item
-    })
-  }, _ => { ElMessage.error('获取本地模型列表失败') })
-}
-
-function loadSessions() {
-  // 获取会话信息
-  runAsync(Sessions, data => {
-    sessions.value = data
-    if (data.length) {
-      sessionId.value = data.find(item => item.id === sessionId.value)?.id || data[0].id
-    } else {
-      showCreateSession()
-    }
-  }, _ => { ElMessage.error('获取会话列表失败') })
-}
-
 function handleQuestionKeydown(event) {
   if (event.altKey && event.key === 'Enter') {
     event.preventDefault()
     sendQuestion()
   }
+}
+
+function loadSessionMessages() {
+  runAsync(() => SessionHistoryMessages({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' }), data => {
+    data = data || []
+    messages.value.unshift(...data)
+    chatScrollbar.value?.setScrollTop(0)
+  }, _ => { ElMessage.error('获取会话历史消息失败') })
 }
 
 function sendQuestion() {
@@ -182,6 +119,10 @@ function sendQuestion() {
   }
   answering.value = true
   question.value = ''
+
+  runAsync(() => Conversation({ sessionId: sessionId.value, content: question.value }), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
+
+  }, _ => { ElMessage.error('发送消息失败') })
   // let pos = 0
   // let body = ''
   // const id = setInterval(() => {
@@ -203,55 +144,36 @@ function sendQuestion() {
 onMounted(() => {
   chatContainer = (chatContent.value?.$el || chatContent.value)
   chatContainer.addEventListener('click', handleChatClick)
-
-  loadSessions()
-  loadModels()
 })
 
 onUnmounted(() => {
   chatContainer.removeEventListener('click', handleChatClick)
 })
 
-function loadSessionMessages() {
-  runAsync(() => SessionHistoryMessages(), data => {
-    data = data || []
-    messages.value.unshift(...data)
-  }, _ => { ElMessage.error('获取会话历史消息失败') })
+const showViewer = ref(false)
+const previewSrcList = ref([])
+
+let prevOverflow = ''
+
+function closeViewer() {
+  document.body.style.overflow = prevOverflow
+  showViewer.value = false
 }
 
-watch(() => sessionId.value, newValue => {
-  messages.value = []
-  if (!newValue) {
-    return
+function handleChatClick(event) {
+  if (event.target.tagName.toLowerCase() === 'a') {
+    event.preventDefault()
+    const href = event.target.getAttribute('href')
+    runQuietly(() => { BrowserOpenURL(href) })
+  } else if (event.target.tagName.toLowerCase() === 'img') {
+    event.preventDefault()
+    const src = event.target.getAttribute('src')
+    previewSrcList.value = [src]
+    prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    showViewer.value = true
   }
-  loadSessionMessages()
-})
-
-function showCreateSession() {
-  // sessionFormData.value = { sessionName: '', modelName: '' }
-  // showSessionDialog.value = true
-  // loadModels()
-  createSesionDialog.value.showDialog()
 }
-
-function handleCreateSession() {
-  sessionFormRef.value?.validate().then(_ => {
-    runAsync(() => CreateSession(JSON.stringify({
-      sessionName: sessionFormData.value.sessionName,
-      modelName: sessionFormData.value.modelName,
-      prompts: '',
-      messageHistoryCount: 5
-    })), data => {
-      data = data || []
-      messages.value.unshift(...data)
-    }, _ => { ElMessage.error('添加会话失败') })
-  })
-}
-
-function handleDeleteSesson(session, index) {
-  sessions.value.splice(index, 1)
-}
-
 </script>
 
 <style lang="scss" scoped>
@@ -277,24 +199,6 @@ function handleDeleteSesson(session, index) {
       // background-color: var(--el-scrollbar-hover-bg-color, var(--el-text-color-secondary));
       // opacity: var(--el-scrollbar-hover-opacity, .5);
     }
-  }
-}
-
-.session-item {
-  width: calc(100% - 20px);
-  padding: 10px;
-  display: flex;
-  cursor: pointer;
-  align-items: center;
-  & + .session-item {
-    border-top: 1px solid var(--el-border-color);
-  }
-  &:hover {
-    background-color: var(--el-menu-hover-bg-color);
-  }
-  &.is-active {
-    background-color: var(--el-menu-hover-bg-color);
-    color: var(--el-menu-active-color);
   }
 }
 

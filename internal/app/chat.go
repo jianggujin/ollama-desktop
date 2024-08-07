@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"ollama-desktop/internal/log"
 	olm "ollama-desktop/internal/ollama"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ type Chat struct {
 func (c *Chat) scanSession(rows *sql.Rows) (*SessionModel, error) {
 	session := &SessionModel{}
 	if err := rows.Scan(&session.Id, &session.SessionName, &session.ModelName, &session.Prompts,
-		&session.MessageHistoryCount, session.Options, &session.CreatedAt, &session.UpdatedAt); err != nil {
+		&session.MessageHistoryCount, &session.Options, &session.CreatedAt, &session.UpdatedAt); err != nil {
 		return nil, err
 	}
 	return session, nil
@@ -37,6 +38,7 @@ func (c *Chat) Sessions() ([]*SessionModel, error) {
             order by created_at desc`
 	rows, err := dao.db().QueryContext(app.ctx, sqlStr)
 	if err != nil {
+		log.Error().Err(err).Msg("Sessions QueryContext")
 		return nil, err
 	}
 	defer rows.Close()
@@ -44,6 +46,7 @@ func (c *Chat) Sessions() ([]*SessionModel, error) {
 	for rows.Next() {
 		session, err := c.scanSession(rows)
 		if err != nil {
+			log.Error().Err(err).Msg("Sessions Next")
 			return nil, err
 		}
 		sessions = append(sessions, session)
@@ -126,6 +129,7 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 		NextMarker string `json:"nextMarker"`
 	}{}
 	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
+		log.Error().Err(err).Msg("SessionHistoryMessages Unmarshal")
 		return nil, err
 	}
 
@@ -135,6 +139,7 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 		sqlStr := `select created_at from t_question where session_id = ? and id = ?`
 		rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, request.NextMarker)
 		if err != nil {
+			log.Error().Err(err).Msg("SessionHistoryMessages Query NextMarker")
 			return nil, err
 		}
 		defer rows.Close()
@@ -153,6 +158,7 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
             limit ?`
 	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, timeMarker, 30)
 	if err != nil {
+		log.Error().Err(err).Msg("SessionHistoryMessages Query Question")
 		return nil, err
 	}
 	defer rows.Close()
@@ -171,10 +177,10 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 		questions = append(questions, question)
 	}
 	if len(questionIds) == 0 {
-		return nil, err
+		return nil, nil
 	}
 
-	ids := strings.Join(questionIds, ", ")
+	ids := "'" + strings.Join(questionIds, "', '") + "'"
 	// 查询历史回答
 	sqlStr = fmt.Sprintf(`select id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
                  prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason, is_success, created_at, updated_at
@@ -183,6 +189,7 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 
 	rows, err = dao.db().QueryContext(app.ctx, sqlStr, values...)
 	if err != nil {
+		log.Error().Err(err).Msg("SessionHistoryMessages Query Answer")
 		return nil, err
 	}
 	defer rows.Close()
@@ -236,9 +243,13 @@ func (c *Chat) SessionHistoryMessages(requestStr string) ([]*ChatMessage, error)
 }
 
 type ConversationResponse struct {
-	SessionId  string `json:"sessionId"`
-	QuestionId string `json:"questionId"`
-	AnswerId   string `json:"messageId"`
+	Id        string    `json:"id"`
+	SessionId string    `json:"sessionId"`
+	Role      string    `json:"role"`
+	Content   string    `json:"content"`
+	Success   bool      `json:"success"`
+	CreatedAt time.Time `json:"createdAt"`
+	AnswerId  string    `json:"answerId"`
 }
 
 func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
@@ -273,31 +284,45 @@ func (c *Chat) Conversation(requestStr string) (*ConversationResponse, error) {
 	}
 
 	go c.chat(session, question, answer)
-	return &ConversationResponse{SessionId: session.Id, QuestionId: question.Id, AnswerId: answer.Id}, nil
+	return &ConversationResponse{
+		Id:        question.Id,
+		SessionId: question.SessionId,
+		Role:      messageRoleUser,
+		Content:   question.QuestionContent,
+		Success:   true,
+		CreatedAt: question.CreatedAt,
+		AnswerId:  answer.Id,
+	}, nil
 }
 
 func (c *Chat) createQuestionAnswer(question *QuestionModel, answer *AnswerModel) error {
-	return dao.transaction(func(tx *sql.Tx) error {
+	err := dao.transaction(func(tx *sql.Tx) error {
 		// 保存问题
 		sqlStr := `insert into t_question(id, session_id, question_content, answer_count, message_type, created_at, updated_at) 
                        values(?, ?, ?, ?, ?, ?, ?)`
 		if _, err := tx.ExecContext(app.ctx, sqlStr, question.Id, question.SessionId, question.QuestionContent,
 			question.AnswerCount, question.MessageType, question.CreatedAt, question.UpdatedAt); err != nil {
+			log.Error().Err(err).Msg("createQuestionAnswer insert question")
 			return err
 		}
 
 		sqlStr = `insert into t_answer(id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
                  prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason,
                  is_success, created_at, updated_at) 
-                       values(?, ?, ?, ?, ?, ?, ?, ?)`
+                       values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		if _, err := tx.ExecContext(app.ctx, sqlStr, answer.Id, answer.SessionId, answer.QuestionId,
 			answer.AnswerContent, answer.MessageRole, answer.TotalDuration, answer.LoadDuration, answer.PromptEvalCount,
 			answer.PromptEvalDuration, answer.EvalCount, answer.EvalDuration, answer.DoneReason,
 			answer.IsSuccess, answer.CreatedAt, answer.UpdatedAt); err != nil {
+			log.Error().Err(err).Msg("createQuestionAnswer insert answer")
 			return err
 		}
 		return nil
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("createQuestionAnswer")
+	}
+	return err
 }
 
 func (c *Chat) combineHistoryMessages(session *SessionModel) ([]olm.Message, error) {
@@ -333,10 +358,10 @@ func (c *Chat) combineHistoryMessages(session *SessionModel) ([]olm.Message, err
 		return nil, nil
 	}
 
-	ids := strings.Join(questionIds, ", ")
+	ids := "'" + strings.Join(questionIds, "', '") + "'"
 	// 查询历史回答
 	sqlStr = fmt.Sprintf(`select id, session_id, question_id, answer_content, message_role, total_duration, load_duration, 
-                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason, is_last,
+                 prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason,
                  is_success, created_at, updated_at
             from t_answer
             where session_id = ? and is_success = 1 and question_id in (%s)`, ids)
@@ -391,7 +416,8 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 	if err != nil {
 		answer.IsSuccess = false
 		answer.DoneReason = err.Error()
-		runtime.EventsEmit(app.ctx, answer.Id, nil, true, false)
+		runtime.EventsEmit(app.ctx, answer.Id, err.Error(), messageRoleAssistant, true, false)
+		return
 	}
 	messages = append(messages, olm.Message{
 		Role:    messageRoleUser,
@@ -399,10 +425,14 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 		Images:  nil,
 	})
 	var buffer bytes.Buffer
+	keepAlive := olm.Duration{
+		Duration: 5 * time.Minute,
+	}
 	err = ollama.newApiClient().Chat(app.ctx, &olm.ChatRequest{
-		Model:    session.ModelName,
-		Messages: messages,
-		Options:  nil,
+		Model:     session.ModelName,
+		Messages:  messages,
+		KeepAlive: &keepAlive,
+		Options:   nil,
 	}, func(response olm.ChatResponse) error {
 		message := response.Message
 		buffer.WriteString(message.Content)
@@ -410,6 +440,7 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 			answer.MessageRole = message.Role
 			answer.UpdatedAt = response.CreatedAt
 			answer.IsSuccess = true
+			answer.AnswerContent = buffer.String()
 			answer.DoneReason = response.DoneReason
 			metrics := response.Metrics
 			answer.TotalDuration = metrics.TotalDuration
@@ -420,12 +451,12 @@ func (c *Chat) chat(session *SessionModel, question *QuestionModel, answer *Answ
 			answer.EvalDuration = metrics.EvalDuration
 			question.AnswerCount = question.AnswerCount + 1
 		}
-		runtime.EventsEmit(app.ctx, answer.Id, buffer.String(), response.Done, true)
+		runtime.EventsEmit(app.ctx, answer.Id, buffer.String(), message.Role, response.Done, true)
 		return nil
 	})
 	if err != nil {
 		answer.IsSuccess = false
 		answer.DoneReason = err.Error()
-		runtime.EventsEmit(app.ctx, answer.Id, nil, true, false)
+		runtime.EventsEmit(app.ctx, answer.Id, err.Error(), messageRoleAssistant, true, false)
 	}
 }

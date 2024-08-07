@@ -6,14 +6,18 @@
     <el-main style="display: flex;flex-direction: column;">
       <el-scrollbar style="flex: 1;" ref="chatScrollbar">
         <div ref="chatContent" style="margin: 10px auto 0 auto;width: 80%;position: relative;display: flex;flex-direction: column;gap: 16px;">
-          <div v-for="(message, index) in messages" :key="index" :class="{question: message.role == 'user', answer: message.role == 'assistant'}">
+          <div v-for="(message, index) in messages" :key="index" :class="{question: message.role == 'user', answer: message.role == 'assistant' || message.id == 'thinking'}">
             <template v-if="message.role == 'user'">
-              <pre class="message">{{ content }}</pre>
+              <pre class="message">{{ message.content }}</pre>
               <i-ep-avatar class="avatar"/>
             </template>
             <template v-if="message.role == 'assistant'">
               <svg-icon icon-class="ollama" class-name="avatar"/>
-              <div class="message" v-html="marked.parse(content)"></div>
+              <div class="message" v-html="marked.parse(message.content || '')"></div>
+            </template>
+            <template v-if="message.id == 'thinking'">
+              <el-button disabled class="avatar" :icon="Loading" circle plain type="primary" loading/>
+              <pre class="message">{{ message.content }}</pre>
             </template>
           </div>
         </div>
@@ -32,6 +36,8 @@
           />
           <el-button :disabled="!canSendQuestion"
             :icon="answering ? Loading : Promotion"
+            @click="sendQuestion"
+            :loading="answering"
             circle
             plain
             style="position: absolute;z-index: 1;right: 10px;bottom: 10px;"
@@ -43,12 +49,12 @@
 </template>
 
 <script setup>
-import SesionPanel from './session-panel.vue'
+import SessionPanel from './session-panel.vue'
 import { Promotion, Loading } from '@element-plus/icons-vue'
 import { throttle } from 'lodash'
 import marked from '~/utils/markdown.js'
 import { ElMessage } from 'element-plus'
-import { BrowserOpenURL } from '@/runtime/runtime.js'
+import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
 import { SessionHistoryMessages, Conversation } from '@/go/app/Chat.js'
 import { runAsync, runQuietly } from '~/utils/wrapper.js'
 
@@ -72,27 +78,18 @@ watch(() => sessionId.value, newValue => {
   if (!newValue) {
     return
   }
-  loadSessionMessages()
+  loadSessionMessages(true)
 })
 
-let chatContentMaxHeight = -1
 let chatContainer
 
 const scrollToBottom = throttle(() => {
   nextTick(() => {
     const chatScrollbarHeight = (chatScrollbar.value?.$el || chatScrollbar.value)?.clientHeight || 0
     const chatContentHeight = (chatContent.value?.$el || chatContent.value)?.clientHeight || 0
-    if (chatContentHeight > chatContentMaxHeight) {
-      chatContentMaxHeight = chatContentHeight
-      chatScrollbar.value?.setScrollTop(chatContentHeight - chatScrollbarHeight)
-    }
+    chatScrollbar.value?.setScrollTop(chatContentHeight - chatScrollbarHeight + 20)
   })
 }, 500)
-
-function forceScrollToBottom() {
-  chatContentMaxHeight = -1
-  scrollToBottom()
-}
 
 function isAllWhitespace(str) {
   return /^\s*$/.test(str)
@@ -105,12 +102,26 @@ function handleQuestionKeydown(event) {
   }
 }
 
-function loadSessionMessages() {
-  runAsync(() => SessionHistoryMessages({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' }), data => {
+function loadSessionMessages(first) {
+  runAsync(() => SessionHistoryMessages(JSON.stringify({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' })), data => {
     data = data || []
     messages.value.unshift(...data)
-    chatScrollbar.value?.setScrollTop(0)
+    if (first) {
+      scrollToBottom()
+    }
+    // chatScrollbar.value?.setScrollTop(0)
   }, _ => { ElMessage.error('获取会话历史消息失败') })
+}
+
+let currentAnswerId = ''
+
+function finishAnswer() {
+  runQuietly(() => {
+    EventsOff(currentAnswerId)
+    currentAnswerId = ''
+  })
+  scrollToBottom()
+  answering.value = false
 }
 
 function sendQuestion() {
@@ -118,27 +129,34 @@ function sendQuestion() {
     return
   }
   answering.value = true
-  question.value = ''
 
-  runAsync(() => Conversation({ sessionId: sessionId.value, content: question.value }), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
+  runAsync(() => Conversation(JSON.stringify({ sessionId: sessionId.value, content: question.value })), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
+    question.value = ''
+    messages.value.push({ id, sessionId, role, content, success, createdAt })
+    messages.value.push({ id: 'thinking', sessionId, role: '', content: '思考中...', success: false, createdAt })
+    scrollToBottom()
 
+    currentAnswerId = answerId
+    runQuietly(() => {
+      EventsOn(answerId, (answerContent, answerRole, answerDone, answerSuccess) => {
+        const lastMessage = messages.value[messages.value.length - 1]
+        if (lastMessage.id === 'thinking') {
+          messages.value[messages.value.length - 1] = { id: currentAnswerId, sessionId, role: answerRole, content: answerContent, answerSuccess, createdAt }
+          finishAnswer()
+          return
+        }
+        // 回答失败或完成
+        if (!answerSuccess || answerDone) {
+          lastMessage.content = answerContent
+          finishAnswer()
+          return
+        }
+        // 回答中
+        lastMessage.content = answerContent + '_'
+        scrollToBottom()
+      })
+    })
   }, _ => { ElMessage.error('发送消息失败') })
-  // let pos = 0
-  // let body = ''
-  // const id = setInterval(() => {
-  //   if (pos < length) {
-  //     body += readme.charAt(pos)
-  //     answer.value = marked.parse(body + '_')
-  //     scrollToBottom()
-  //     pos++
-  //     return
-  //   }
-  //   answer.value = marked.parse(body)
-  //   scrollToBottom()
-  //   answering.value = false
-  //   chatContentMaxHeight = -1
-  //   clearInterval(id)
-  // }, 50)
 }
 
 onMounted(() => {
@@ -148,6 +166,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   chatContainer.removeEventListener('click', handleChatClick)
+  if (currentAnswerId) {
+    runQuietly(() => {
+      EventsOff(currentAnswerId)
+      currentAnswerId = ''
+    })
+  }
 })
 
 const showViewer = ref(false)
@@ -225,6 +249,9 @@ function handleChatClick(event) {
     max-width: 100%;
     cursor: pointer;
   }
+  :deep(p) {
+    margin-block: unset;
+  }
 }
 .question {
   display: flex;
@@ -234,7 +261,7 @@ function handleChatClick(event) {
   // & > .avatar {
   // }
   & > .message {
-    margin-left: auto;
+    margin: 0 0 0 auto;
     // color: white;
     background-color: var(--el-bg-color);
     // background-color: var(--el-color-primary);
@@ -250,6 +277,7 @@ function handleChatClick(event) {
   // }
   & > .message {
     // color: var(--el-text-color);
+    margin: 0;
     background-color: var(--el-bg-color);
   }
 }

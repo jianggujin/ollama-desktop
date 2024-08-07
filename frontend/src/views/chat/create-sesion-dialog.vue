@@ -1,33 +1,31 @@
 <template>
-    <el-dialog v-model="visible" title="新建会话" width="500" >
-        <el-form ref="sessionFormRef" :model="sessionFormData" :rules="sessionFormRule" label-width="auto" status-icon>
-        <el-form-item label="会话名称" prop="sessionName">
-            <el-input v-model="sessionFormData.sessionName" />
-        </el-form-item>
-        <el-form-item label="模型名称" prop="modelName">
-            <el-select v-model="sessionFormData.modelName" placeholder="请选择模型" style="width: 100%">
-            <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
-            </el-select>
-        </el-form-item>
-        <el-form-item label="历史轮次" prop="messageHistoryCount">
-            <el-input-number v-model="sessionFormData.messageHistoryCount" :min="0" controls-position="right" :precision="0" style="width: 100%;"/>
-        </el-form-item>
-        </el-form>
-        <template #footer>
-        <div class="dialog-footer">
-            <el-button @click="visible = false">取消</el-button>
-            <el-button type="primary" @click="handleCreateSession">确认</el-button>
-        </div>
-        </template>
-    </el-dialog>
+  <el-dialog v-model="visible" title="新建会话" width="500" >
+    <el-form ref="sessionFormRef" :model="sessionFormData" :rules="sessionFormRule" label-width="auto">
+    <el-form-item label="会话名称" prop="sessionName">
+      <el-input v-model="sessionFormData.sessionName" />
+    </el-form-item>
+    <el-form-item label="模型名称" prop="modelName">
+      <el-select v-model="sessionFormData.modelName" placeholder="请选择模型" style="width: 100%">
+        <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
+      </el-select>
+    </el-form-item>
+    <el-form-item label="历史轮次" prop="messageHistoryCount">
+      <el-input-number v-model="sessionFormData.messageHistoryCount" :min="0" controls-position="right" :precision="0" style="width: 100%;"/>
+    </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="visible = false">取消</el-button>
+        <el-button type="primary" @click="handleCreateSession">确认</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
-import { throttle } from 'lodash'
-import marked from '~/utils/markdown.js'
 import { ElMessage } from 'element-plus'
 import { CreateSession } from '@/go/app/Chat.js'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runAsync } from '~/utils/wrapper.js'
 import { List as listModels } from '@/go/app/Ollama.js'
 import { humanize } from '~/utils/humanize.js'
 
@@ -55,8 +53,8 @@ const sessionFormRule = ref({
 
 function loadModels() {
   // 获取模型信息
-  runAsync(listModels, ({ models }) => {
-    models.value = (models || []).map(item => {
+  runAsync(listModels, data => {
+    models.value = (data.models || []).map(item => {
       item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
         new Date(item.modified_at))
       item.formatSize = humanize.filesize(item.size)

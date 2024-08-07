@@ -18,7 +18,7 @@
     <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
       <el-button :icon="DocumentAdd" @click="showCreateSession">添加会话</el-button>
     </div>
-    <create-sesion-dialog ref="createSesionDialog"/>
+    <create-sesion-dialog ref="createSesionDialog" @create="handleCreated"/>
   </div>
 </template>
 
@@ -33,7 +33,6 @@ const emits = defineEmits(['change'])
 
 const sessions = ref([])
 const sessionId = ref('')
-const messages = ref([])
 
 const createSesionDialog = ref(null)
 
@@ -52,6 +51,11 @@ onMounted(loadSessions)
 
 function showCreateSession() {
   createSesionDialog.value.showDialog()
+}
+
+function handleCreated(session) {
+  sessions.value.push(session)
+  sessionId.value = session.id
 }
 
 function handleDeleteSesson(session, index) {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"net"
 	"net/http"
@@ -90,7 +89,7 @@ func (o *Ollama) Heartbeat() {
 func (o *Ollama) Start() error {
 	err := cmd.StartApp(app.ctx, o.newApiClient())
 	if err != nil {
-		log.Error().Err(err).Msg("Ollama StartApp")
+		log.Error().Err(err).Msg("start ollama app error")
 		return err
 	}
 	o.Heartbeat()
@@ -98,131 +97,73 @@ func (o *Ollama) Start() error {
 }
 
 func (o *Ollama) List() (*olm.ListResponse, error) {
-	return o.newApiClient().List(app.ctx)
+	resp, err := o.newApiClient().List(app.ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("list ollama model error")
+	}
+	return resp, err
 }
 
 func (o *Ollama) ListRunning() (*olm.ProcessResponse, error) {
-	return o.newApiClient().ListRunning(app.ctx)
+	resp, err := o.newApiClient().ListRunning(app.ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("list ollama running model error")
+	}
+	return resp, err
 }
 
-func (o *Ollama) Generate(requestId, requestStr string) error {
-	request := &olm.GenerateRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
+func (o *Ollama) Delete(request *olm.DeleteRequest) error {
+	err := o.newApiClient().Delete(app.ctx, request)
+	if err != nil {
+		log.Error().Err(err).Msg("delete ollama model error")
 	}
-	go o.newApiClient().Generate(app.ctx, request, func(response olm.GenerateResponse) error {
-		runtime.EventsEmit(app.ctx, requestId, response)
-		return nil
-	})
+	return err
+}
+
+func (o *Ollama) Show(request olm.ShowRequest) (*olm.ShowResponse, error) {
+	log.Error().Any("request", request).Msg("SHow")
+	resp, err := o.newApiClient().Show(app.ctx, &request)
+	if err != nil {
+		log.Error().Err(err).Msg("show ollama model error")
+	}
+	return resp, err
+}
+
+func (o *Ollama) Pull(requestId string, request *olm.PullRequest) error {
+	go func() {
+		err := o.newApiClient().Pull(app.ctx, request, func(response olm.ProgressResponse) error {
+			runtime.EventsEmit(app.ctx, requestId, response)
+			return nil
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("pull ollama model error")
+		}
+	}()
 	return nil
 }
 
-func (o *Ollama) Chat(requestId, requestStr string) error {
-	request := &olm.ChatRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
+func (o *Ollama) SearchOnline(request *olm.SearchRequest) (*olm.SearchResponse, error) {
+	resp, err := o.newOllamaClient().Search(app.ctx, request)
+	if err != nil {
+		log.Error().Err(err).Msg("search ollama model error")
 	}
-	go o.newApiClient().Chat(app.ctx, request, func(response olm.ChatResponse) error {
-		runtime.EventsEmit(app.ctx, requestId, response)
-		return nil
-	})
-	return nil
+	return resp, err
 }
 
-func (o *Ollama) Delete(requestStr string) error {
-	request := &olm.DeleteRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
+func (o *Ollama) LibraryOnline(request *olm.LibraryRequest) ([]*olm.ModelInfo, error) {
+	resp, err := o.newOllamaClient().Library(app.ctx, request)
+	if err != nil {
+		log.Error().Err(err).Msg("ollama library error")
 	}
-	return o.newApiClient().Delete(app.ctx, request)
-}
-
-func (o *Ollama) Show(requestStr string) (*olm.ShowResponse, error) {
-	request := &olm.ShowRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return nil, err
-	}
-	return o.newApiClient().Show(app.ctx, request)
-}
-
-func (o *Ollama) Embed(requestStr string) (*olm.EmbedResponse, error) {
-	request := &olm.EmbedRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return nil, err
-	}
-	return o.newApiClient().Embed(app.ctx, request)
-}
-
-func (o *Ollama) Embeddings(requestStr string) (*olm.EmbeddingResponse, error) {
-	request := &olm.EmbeddingRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return nil, err
-	}
-	return o.newApiClient().Embeddings(app.ctx, request)
-}
-
-func (o *Ollama) Pull(requestId, requestStr string) error {
-	request := &olm.PullRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
-	}
-	go o.newApiClient().Pull(app.ctx, request, func(response olm.ProgressResponse) error {
-		runtime.EventsEmit(app.ctx, requestId, response)
-		return nil
-	})
-	return nil
-}
-
-func (o *Ollama) Push(requestId, requestStr string) error {
-	request := &olm.PushRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
-	}
-	go o.newApiClient().Push(app.ctx, request, func(response olm.ProgressResponse) error {
-		runtime.EventsEmit(app.ctx, requestId, response)
-		return nil
-	})
-	return nil
-}
-
-func (o *Ollama) Create(requestId, requestStr string) error {
-	request := &olm.CreateRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
-	}
-	go o.newApiClient().Create(app.ctx, request, func(response olm.ProgressResponse) error {
-		runtime.EventsEmit(app.ctx, requestId, response)
-		return nil
-	})
-	return nil
-}
-
-func (o *Ollama) Copy(requestStr string) error {
-	request := &olm.CopyRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
-	}
-	return o.newApiClient().Copy(app.ctx, request)
-}
-
-func (o *Ollama) SearchOnline(requestStr string) (*olm.SearchResponse, error) {
-	request := &olm.SearchRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return nil, err
-	}
-	return o.newOllamaClient().Search(app.ctx, request)
-}
-
-func (o *Ollama) LibraryOnline(requestStr string) ([]*olm.ModelInfo, error) {
-	request := &olm.LibraryRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return nil, err
-	}
-	return o.newOllamaClient().Library(app.ctx, request)
+	return resp, err
 }
 
 func (o *Ollama) ModelInfoOnline(modelTag string) (*olm.ModelInfoResponse, error) {
-	return o.newOllamaClient().ModelInfo(app.ctx, modelTag)
+	resp, err := o.newOllamaClient().ModelInfo(app.ctx, modelTag)
+	if err != nil {
+		log.Error().Err(err).Msg("ollama model info error")
+	}
+	return resp, err
 }
 
 func (o *Ollama) newApiClient() *api.Client {

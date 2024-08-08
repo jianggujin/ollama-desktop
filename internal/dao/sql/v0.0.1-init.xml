@@ -14,33 +14,19 @@
         <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
         <column columnName="session_name" dataType="VARCHAR" maxLength="50" nullable="false" remarks="会话名称"/>
         <column columnName="model_name" dataType="VARCHAR" maxLength="100" nullable="false" remarks="模型名称"/>
-        <column columnName="prompts" dataType="VARCHAR" maxLength="100" remarks="提示词"/>
         <column columnName="message_history_count" dataType="INT" defaultOriginValue="3" nullable="false"
                 remarks="会话历史轮次"/>
+        <column columnName="keep_alive" dataType="VARCHAR" maxLength="50" remarks="模型在内存中存活时间"/>
+        <column columnName="system_message" dataType="TEXT" remarks="系统消息"/>
         <column columnName="options" dataType="TEXT" remarks="扩展选项"/>
         <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
     </createTable>
-    <createTable tableName="t_question" remarks="消息信息表">
+    <createTable tableName="t_chat_message" remarks="聊天消息信息表">
         <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
         <column columnName="session_id" dataType="VARCHAR" maxLength="64" nullable="false" remarks="会话编号"/>
         <column columnName="question_content" dataType="TEXT" remarks="问题内容"/>
-        <column columnName="answer_count" dataType="INT" defaultOriginValue="0" nullable="false" remarks="回答次数"/>
-        <column columnName="message_type" dataType="VARCHAR" maxLength="50" defaultValue="chat" nullable="false"
-                remarks="消息类型"/>
-        <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
-        <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
-    </createTable>
-    <createIndex tableName="t_question" indexName="ix_session_id_type">
-        <indexColumn columnName="session_id"/>
-        <indexColumn columnName="message_type"/>
-    </createIndex>
-    <createTable tableName="t_answer" remarks="回答信息表">
-        <column columnName="id" dataType="VARCHAR" maxLength="64" primaryKey="true" remarks="主键"/>
-        <column columnName="session_id" dataType="VARCHAR" maxLength="64" nullable="false" remarks="会话编号"/>
-        <column columnName="question_id" dataType="VARCHAR" maxLength="64" nullable="false" remarks="问题编号"/>
         <column columnName="answer_content" dataType="TEXT" remarks="回答内容"/>
-        <column columnName="message_role" dataType="VARCHAR" maxLength="100" defaultValue="assistant" remarks="角色"/>
         <column columnName="total_duration" dataType="BIGINT" defaultOriginValue="0" remarks="总持续时间"/>
         <column columnName="load_duration" dataType="BIGINT" defaultOriginValue="0" remarks="加载持续时间"/>
         <column columnName="prompt_eval_count" dataType="INT" defaultOriginValue="0" remarks="提示评估计数"/>
@@ -52,11 +38,7 @@
         <column columnName="created_at" dataType="TIMESTAMP" nullable="false" remarks="创建时间"/>
         <column columnName="updated_at" dataType="TIMESTAMP" nullable="false" remarks="修改时间"/>
     </createTable>
-    <createIndex tableName="t_answer" indexName="ix_session_answer">
+    <createIndex tableName="t_chat_message" indexName="ix_chat_session_id">
         <indexColumn columnName="session_id"/>
-    </createIndex>
-    <createIndex tableName="t_answer" indexName="ix_question_id_role">
-        <indexColumn columnName="question_id"/>
-        <indexColumn columnName="message_role"/>
     </createIndex>
 </vulcan>

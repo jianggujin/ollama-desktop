@@ -15,11 +15,9 @@
 import NavHeader from './NavHeader.vue'
 import LayoutFooter from './LayoutFooter.vue'
 import { useRoute } from 'vue-router'
-import { closeLoading } from '~/utils/loading.js'
 
 const route = useRoute()
 const key = computed(() => { return route.path })
-watch(() => route.path, closeLoading)
 </script>
 <style lang="scss" scoped>
   .el-container {

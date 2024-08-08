@@ -1,5 +1,12 @@
 <template>
-  <div id="loading-wrapper" style="height: 100%;">
+  <div
+    style="height: 100%;"
+    v-loading="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background"
+  >
     <el-scrollbar>
       <div style="margin: 50px auto 0 auto;width: 80%;" v-if="model.name">
         <div class="model-item">
@@ -62,9 +69,12 @@ import { Pull } from '@/go/app/DownLoader.js'
 import { BrowserOpenURL, ClipboardSetText } from '@/runtime/runtime.js'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
 import marked from '~/utils/markdown.js'
 import { useOllamaStore } from '~/store/ollama.js'
+import loadingOptions from '~/utils/loading.js'
+
+const loading = ref(false)
 
 const ollamaStore = useOllamaStore()
 
@@ -127,7 +137,8 @@ onMounted(() => {
 
   readmeContainer = document.getElementById('readme')
   readmeContainer.addEventListener('click', handleReadmeClick)
-  runAsync(() => ModelInfoOnline(props.modelTag), data => {
+  loading.value = true
+  runQuietly(() => ModelInfoOnline(props.modelTag), data => {
     modelInfo.value = data
     if (!tag.value) {
       tag.value = data?.tags?.find(item => item.latest)?.name || ''
@@ -135,7 +146,7 @@ onMounted(() => {
   }, _ => {
     ElMessage.error('获取模型信息失败')
     router.replace('/home/library')
-  })
+  }, _ => { loading.value = false })
 })
 
 onUnmounted(() => {
@@ -155,9 +166,10 @@ function handleCopyCommand() {
 }
 
 function handleDownload() {
-  runAsync(() => Pull(JSON.stringify({ model: props.modelTag })),
+  loading.value = true
+  runQuietly(() => Pull({ model: props.modelTag }),
     _ => ElMessage.success('模型' + props.modelTag + '已加入下载队列'),
-    _ => ElMessage.error('模型' + props.modelTag + '加入下载队列失败'))
+    _ => ElMessage.error('模型' + props.modelTag + '加入下载队列失败'), _ => { loading.value = false })
 }
 
 function closeViewer() {

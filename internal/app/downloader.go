@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	ollama2 "ollama-desktop/internal/ollama"
@@ -59,16 +57,9 @@ type DownLoader struct {
 	lock  sync.Mutex
 }
 
-func (d *DownLoader) Pull(requestStr string) error {
-	request := &ollama2.PullRequest{}
-	if err := json.Unmarshal([]byte(requestStr), request); err != nil {
-		return err
-	}
+func (d *DownLoader) Pull(request *ollama2.PullRequest) error {
 	if request.Model == "" && request.Name != "" {
 		request.Model = request.Name
-	}
-	if request.Model == "" {
-		return errors.New("model must not be empty")
 	}
 	if d.tasks == nil {
 		d.tasks = make(map[string]*DownloadItem)
@@ -102,7 +93,7 @@ func (d *DownLoader) pull(request *ollama2.PullRequest, item *DownloadItem) {
 			bar, ok := cache[resp.Digest]
 			if !ok {
 				bar = &ProgressBar{
-					Name:       fmt.Sprintf("pulling %s...", resp.Digest[7:19]),
+					Name:       fmt.Sprintf("pulling %s", resp.Digest[7:19]),
 					Percentage: 0,
 					Status:     "",
 				}

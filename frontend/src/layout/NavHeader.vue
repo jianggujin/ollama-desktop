@@ -8,7 +8,7 @@
     <el-menu style="--wails-draggable:no-drag;cursor: default;" :default-active="activeIndex" mode="horizontal" :ellipsis="false" @select="handleSelect">
       <el-menu-item index="/home">主页</el-menu-item>
       <el-menu-item index="/chat">聊天</el-menu-item>
-      <!-- <el-menu-item index="/setting">设置</el-menu-item> -->
+      <el-menu-item index="/setting">设置</el-menu-item>
       <el-menu-item index="/about">关于</el-menu-item>
     </el-menu>
     <div style="--wails-draggable:no-drag;cursor: default;">

@@ -1,5 +1,12 @@
 <template>
-  <div id="loading-wrapper" style="height: 100%;">
+  <div
+    style="height: 100%;"
+    v-loading="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background"
+  >
     <el-scrollbar ref="scrollbar">
       <div style="display: flex;align-items: center;justify-content: center;margin-top: 50px;">
         <el-input v-model="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" maxlength="100"/>
@@ -58,8 +65,11 @@
 import { Search } from '@element-plus/icons-vue'
 import { SearchOnline, LibraryOnline } from '@/go/app/Ollama.js'
 import { ElMessage } from 'element-plus'
-import { runAsync } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
 import { useRouter } from 'vue-router'
+import loadingOptions from '~/utils/loading.js'
+
+const loading = ref(false)
 
 const router = useRouter()
 
@@ -87,18 +97,20 @@ function changeCurrentPage(page) {
 
 function handleSearch(page) {
   if (searchForm.value.searchType === 'sort') {
-    runAsync(() => LibraryOnline(JSON.stringify({ q: searchForm.value.q, sort: searchForm.value.sort })), data => { list.value = data }, _ => {
+    loading.value = true
+    runQuietly(() => LibraryOnline({ q: searchForm.value.q, sort: searchForm.value.sort }), data => { list.value = data }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')
-    })
+    }, _ => { loading.value = false })
   } else if (searchForm.value.searchType === 'function') {
-    runAsync(() => SearchOnline(JSON.stringify({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c })), data => {
+    loading.value = true
+    runQuietly(() => SearchOnline({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c }), data => {
       pagination.value = { page: data.page, pageCount: data.pageCount }
       list.value = data.items
     }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')
-    })
+    }, _ => { loading.value = false })
   }
 }
 
@@ -134,6 +146,7 @@ watch(searchForm, lazySearch, {
   :deep(.el-radio-button__inner) {
     border: var(--el-border)!important;
     border-radius: var(--el-border-radius-base)!important;
+    box-shadow: none;
   }
 }
 .model-item {

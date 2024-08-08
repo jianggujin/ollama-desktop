@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"ollama-desktop/internal/log"
 	"time"
 )
 
@@ -30,6 +31,7 @@ func (c *Config) configs(forceUpdate bool) (map[string]string, error) {
 	sqlStr := `select config_key, config_value from t_config`
 	rows, err := dao.db().QueryContext(app.ctx, sqlStr)
 	if err != nil {
+		log.Error().Err(err).Msg("query config error")
 		return nil, err
 	}
 	defer rows.Close()
@@ -65,6 +67,9 @@ func (c *Config) set(key, value string) error {
 		} else {
 			sqlStr := `insert into t_config(config_key, config_value, created_at, updated_at) values(?, ?, ?, ?)`
 			_, err = tx.ExecContext(app.ctx, sqlStr, key, value, time.Now(), time.Now())
+		}
+		if err != nil {
+			log.Error().Err(err).Msg("set config error")
 		}
 		return
 	})

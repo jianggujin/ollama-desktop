@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	refTypeQuestion      = "question"
-	refTypeAnswer        = "answer"
 	messageRoleUser      = "user"
 	messageRoleSystem    = "system"
 	messageRoleAssistant = "assistant"
@@ -61,29 +59,19 @@ type SessionModel struct {
 	Id                  string    `json:"id"`
 	SessionName         string    `json:"sessionName"`
 	ModelName           string    `json:"modelName"`
-	Prompts             string    `json:"prompts,omitempty"`
 	MessageHistoryCount int       `json:"messageHistoryCount"`
+	KeepAlive           string    `json:"keepAlive,omitempty"`
+	SystemMessage       string    `json:"systemMessage,omitempty"`
 	Options             string    `json:"options,omitempty"`
 	CreatedAt           time.Time `json:"createdAt"`
 	UpdatedAt           time.Time `json:"updatedAt"`
 }
 
-type QuestionModel struct {
-	Id              string    `json:"id"`
-	SessionId       string    `json:"sessionId"`
-	QuestionContent string    `json:"questionContent"`
-	AnswerCount     int       `json:"answerCount"`
-	MessageType     string    `json:"messageType"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-}
-
-type AnswerModel struct {
+type ChatMessageModel struct {
 	Id                 string        `json:"id"`
 	SessionId          string        `json:"sessionId"`
-	QuestionId         string        `json:"questionId"`
+	QuestionContent    string        `json:"questionContent"`
 	AnswerContent      string        `json:"answerContent"`
-	MessageRole        string        `json:"messageRole"`
 	TotalDuration      time.Duration `json:"totalDuration"`
 	LoadDuration       time.Duration `json:"loadDuration"`
 	PromptEvalCount    int           `json:"promptEvalCount"`

@@ -1,5 +1,11 @@
 <template>
-  <el-container id="loading-wrapper">
+  <el-container
+     v-loading="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background"
+  >
     <el-aside width="250px">
       <session-panel @change="handleSessionChange"/>
     </el-aside>
@@ -56,7 +62,10 @@ import marked from '~/utils/markdown.js'
 import { ElMessage } from 'element-plus'
 import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
 import { SessionHistoryMessages, Conversation } from '@/go/app/Chat.js'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
+import loadingOptions from '~/utils/loading.js'
+
+const loading = ref(false)
 
 const sessionId = ref('')
 
@@ -103,14 +112,15 @@ function handleQuestionKeydown(event) {
 }
 
 function loadSessionMessages(first) {
-  runAsync(() => SessionHistoryMessages(JSON.stringify({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' })), data => {
+  loading.value = true
+  runQuietly(() => SessionHistoryMessages({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' }), data => {
     data = data || []
     messages.value.unshift(...data)
     if (first) {
       scrollToBottom()
     }
     // chatScrollbar.value?.setScrollTop(0)
-  }, _ => { ElMessage.error('获取会话历史消息失败') })
+  }, _ => { ElMessage.error('获取会话历史消息失败') }, () => { loading.value = false })
 }
 
 let currentAnswerId = ''
@@ -130,7 +140,8 @@ function sendQuestion() {
   }
   answering.value = true
 
-  runAsync(() => Conversation(JSON.stringify({ sessionId: sessionId.value, content: question.value })), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
+  loading.value = true
+  runQuietly(() => Conversation({ sessionId: sessionId.value, content: question.value }), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
     question.value = ''
     messages.value.push({ id, sessionId, role, content, success, createdAt })
     messages.value.push({ id: 'thinking', sessionId, role: '', content: '思考中...', success: false, createdAt })
@@ -156,7 +167,7 @@ function sendQuestion() {
         scrollToBottom()
       })
     })
-  }, _ => { ElMessage.error('发送消息失败') })
+  }, _ => { ElMessage.error('发送消息失败') }, () => { loading.value = false })
 }
 
 onMounted(() => {
@@ -201,9 +212,9 @@ function handleChatClick(event) {
 </script>
 
 <style lang="scss" scoped>
-.el-aside {
-  background-color: var(--el-bg-color-page);
-}
+// .el-aside {
+  // background-color: var(--el-bg-color-page);
+// }
 .el-main {
   background-color: var(--el-fill-color-extra-light);
   padding: 0;

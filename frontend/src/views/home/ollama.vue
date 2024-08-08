@@ -1,5 +1,11 @@
 <template>
-  <el-scrollbar>
+  <el-scrollbar
+    v-loading="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background"
+  >
     <div style="display: flex;align-items: center;justify-content: center;margin-top: 15px;">
       <el-result :title="title" :sub-title="subTitle" style="--el-result-extra-margin-top: 10px;">
         <template #icon>
@@ -34,7 +40,10 @@ import { ElMessage } from 'element-plus'
 import { BrowserOpenURL } from '@/runtime/runtime.js'
 import { Version, Envs, Start } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
+import loadingOptions from '~/utils/loading.js'
+
+const loading = ref(false)
 
 const ollamaStore = useOllamaStore()
 const version = ref('')
@@ -52,16 +61,21 @@ const subTitle = computed(() => {
 })
 
 onMounted(() => {
-  runAsync(Version, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
-  runAsync(Envs, data => { envs.value = data }, _ => { ElMessage.error('获取Ollama环境信息失败') })
+  loading.value = true
+  runQuietly(Version, data => { version.value = data }, _ => ElMessage.error('获取Ollama版本失败'), _ => { loading.value = false })
+  runQuietly(Envs, data => { envs.value = data }, _ => ElMessage.error('获取Ollama环境信息失败'), _ => { loading.value = false })
 })
 
 function startOllamaApp() {
-  runAsync(Start, () => {
+  loading.value = true
+  runQuietly(Start, () => {
     ElMessage.success('启动Ollama服务成功')
-    runAsync(Version, data => { version.value = data }, _ => { ElMessage.error('获取Ollama版本失败') })
+    runQuietly(Version, data => { version.value = data }, _ => ElMessage.error('获取Ollama版本失败'), _ => { loading.value = false })
   },
-  () => { ElMessage.error('启动Ollama服务失败') })
+  () => {
+    loading.value = false
+    ElMessage.error('启动Ollama服务失败')
+  })
 }
 
 function openDownload() {

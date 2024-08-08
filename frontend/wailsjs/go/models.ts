@@ -44,12 +44,9 @@ export namespace app {
 	export class ConversationResponse {
 	    id: string;
 	    sessionId: string;
-	    role: string;
 	    content: string;
-	    success: boolean;
 	    // Go type: time
 	    createdAt: any;
-	    answerId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ConversationResponse(source);
@@ -59,11 +56,8 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.sessionId = source["sessionId"];
-	        this.role = source["role"];
 	        this.content = source["content"];
-	        this.success = source["success"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.answerId = source["answerId"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -150,8 +144,9 @@ export namespace app {
 	    id: string;
 	    sessionName: string;
 	    modelName: string;
-	    prompts?: string;
 	    messageHistoryCount: number;
+	    keep_alive?: string;
+	    system_message?: string;
 	    options?: string;
 	    // Go type: time
 	    createdAt: any;
@@ -167,8 +162,9 @@ export namespace app {
 	        this.id = source["id"];
 	        this.sessionName = source["sessionName"];
 	        this.modelName = source["modelName"];
-	        this.prompts = source["prompts"];
 	        this.messageHistoryCount = source["messageHistoryCount"];
+	        this.keep_alive = source["keep_alive"];
+	        this.system_message = source["system_message"];
 	        this.options = source["options"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
@@ -197,32 +193,6 @@ export namespace app {
 
 export namespace ollama {
 	
-	export class EmbedResponse {
-	    model: string;
-	    embeddings: number[][];
-	
-	    static createFrom(source: any = {}) {
-	        return new EmbedResponse(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.model = source["model"];
-	        this.embeddings = source["embeddings"];
-	    }
-	}
-	export class EmbeddingResponse {
-	    embedding: number[];
-	
-	    static createFrom(source: any = {}) {
-	        return new EmbeddingResponse(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.embedding = source["embedding"];
-	    }
-	}
 	export class ModelDetails {
 	    parent_model: string;
 	    format: string;
@@ -603,6 +573,28 @@ export namespace ollama {
 		    }
 		    return a;
 		}
+	}
+	export class ShowRequest {
+	    model: string;
+	    system: string;
+	    template: string;
+	    verbose: boolean;
+	    options: {[key: string]: any};
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShowRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.system = source["system"];
+	        this.template = source["template"];
+	        this.verbose = source["verbose"];
+	        this.options = source["options"];
+	        this.name = source["name"];
+	    }
 	}
 	export class ShowResponse {
 	    license?: string;

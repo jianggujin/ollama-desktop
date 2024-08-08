@@ -1,5 +1,10 @@
 <template>
-  <el-scrollbar>
+  <el-scrollbar
+    v-loading="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background">
     <div style="margin-top: 15px;">
       <el-button :icon="Refresh" style="margin-left: 15px;" @click="handleRefresh" />
     </div>
@@ -28,15 +33,19 @@ import { Refresh, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { List, Delete as deleteOllamaModel } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
 import { humanize } from '~/utils/humanize.js'
 import { EventsOn, EventsOff } from '@/runtime/runtime.js'
+import loadingOptions from '~/utils/loading.js'
+
+const loading = ref(false)
 
 const ollamaStore = useOllamaStore()
 const list = ref([])
 
 function handleRefresh() {
-  runAsync(List, ({ models }) => {
+  loading.value = true
+  runQuietly(List, ({ models }) => {
     list.value = (models || []).map(item => {
       item.formatModifiedAt = humanize.date('Y-m-d H:i:s',
         new Date(item.modified_at))
@@ -45,11 +54,12 @@ function handleRefresh() {
       item.quantizationLevel = item.details?.quantization_level
       return item
     })
-  }, _ => { ElMessage.error('获取本地模型列表失败') })
+  }, _ => ElMessage.error('获取本地模型列表失败'), _ => { loading.value = false })
 }
 
 function handleDelete(row) {
-  runAsync(() => deleteOllamaModel(JSON.stringify({ model: row.name })), handleRefresh, _ => { ElMessage.error(`删除模型(${row.name})失败`) })
+  loading.value = true
+  runQuietly(() => deleteOllamaModel({ model: row.name }), handleRefresh, _ => ElMessage.error(`删除模型(${row.name})失败`), _ => { loading.value = false })
 }
 
 onMounted(() => {

@@ -1,5 +1,11 @@
 <template>
-  <div>
+  <div
+    v-loading.body.fullscreen.lock="loading"
+    :element-loading-text="loadingOptions.text"
+    :element-loading-spinner="loadingOptions.svg"
+    :element-loading-svg-view-box="loadingOptions.svgViewBox"
+    :element-loading-background="loadingOptions.background"
+  >
     <div class="footer">
       <el-text style="margin-left: 10px;margin-right: 5px;">Ollama</el-text>
       <i-ep-circle-check-filled v-if="ollamaStore.started" style="color: var(--el-color-success);font-size: var(--el-font-size-base);" />
@@ -58,10 +64,13 @@ import { ElNotification } from 'element-plus'
 import { onUnmounted, ref } from 'vue'
 import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
 import { Heartbeat, Start } from '@/go/app/Ollama.js'
-import { runAsync, runQuietly } from '~/utils/wrapper.js'
+import { runQuietly } from '~/utils/wrapper.js'
+import loadingOptions from '~/utils/loading.js'
 import { useOllamaStore } from '~/store/ollama.js'
 import { useDownloaderStore } from '~/store/downloader.js'
 import { Cancel } from '@/go/app/DownLoader.js'
+
+const loading = ref(false)
 
 const ollamaStore = useOllamaStore()
 const downloaderStore = useDownloaderStore()
@@ -111,8 +120,10 @@ onUnmounted(() => {
 })
 
 function startOllamaApp() {
-  runAsync(Start, () => { ElMessage.success('启动Ollama服务成功') },
-    () => { ElMessage.error('启动Ollama服务失败') })
+  loading.value = true
+  runQuietly(Start, _ => ElMessage.success('启动Ollama服务成功'),
+    _ => ElMessage.error('启动Ollama服务失败'),
+    _ => { loading.value = false })
 }
 
 function openHomePage() {
@@ -120,8 +131,9 @@ function openHomePage() {
 }
 
 function handleDeleteDownload(item) {
-  runAsync(() => Cancel(item.model), () => { ElMessage.success(`取消模型${item.model}下载成功`) },
-    () => { ElMessage.error(`取消模型${item.model}下载失败`) })
+  loading.value = true
+  runQuietly(() => Cancel(item.model), _ => ElMessage.success(`取消模型${item.model}下载成功`),
+    _ => ElMessage.error(`取消模型${item.model}下载失败`), _ => { loading.value = false })
 }
 </script>
 

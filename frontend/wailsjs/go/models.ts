@@ -41,6 +41,20 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class ConversationRequest {
+	    sessionId: string;
+	    content: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ConversationRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sessionId = source["sessionId"];
+	        this.content = source["content"];
+	    }
+	}
 	export class ConversationResponse {
 	    id: string;
 	    sessionId: string;
@@ -140,13 +154,27 @@ export namespace app {
 	
 	    }
 	}
+	export class SessionHistoryMessageRequest {
+	    sessionId: string;
+	    nextMarker: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SessionHistoryMessageRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sessionId = source["sessionId"];
+	        this.nextMarker = source["nextMarker"];
+	    }
+	}
 	export class SessionModel {
 	    id: string;
 	    sessionName: string;
 	    modelName: string;
 	    messageHistoryCount: number;
-	    keep_alive?: string;
-	    system_message?: string;
+	    keepAlive?: string;
+	    systemMessage?: string;
 	    options?: string;
 	    // Go type: time
 	    createdAt: any;
@@ -163,8 +191,8 @@ export namespace app {
 	        this.sessionName = source["sessionName"];
 	        this.modelName = source["modelName"];
 	        this.messageHistoryCount = source["messageHistoryCount"];
-	        this.keep_alive = source["keep_alive"];
-	        this.system_message = source["system_message"];
+	        this.keepAlive = source["keepAlive"];
+	        this.systemMessage = source["systemMessage"];
 	        this.options = source["options"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
@@ -193,6 +221,34 @@ export namespace app {
 
 export namespace ollama {
 	
+	export class DeleteRequest {
+	    model: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeleteRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.name = source["name"];
+	    }
+	}
+	export class LibraryRequest {
+	    q: string;
+	    sort: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LibraryRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.q = source["q"];
+	        this.sort = source["sort"];
+	    }
+	}
 	export class ModelDetails {
 	    parent_model: string;
 	    format: string;
@@ -537,6 +593,44 @@ export namespace ollama {
 		    }
 		    return a;
 		}
+	}
+	export class PullRequest {
+	    model: string;
+	    insecure?: boolean;
+	    username: string;
+	    password: string;
+	    stream?: boolean;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PullRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.insecure = source["insecure"];
+	        this.username = source["username"];
+	        this.password = source["password"];
+	        this.stream = source["stream"];
+	        this.name = source["name"];
+	    }
+	}
+	export class SearchRequest {
+	    q: string;
+	    p: number;
+	    c: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SearchRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.q = source["q"];
+	        this.p = source["p"];
+	        this.c = source["c"];
+	    }
 	}
 	export class SearchResponse {
 	    query: string;

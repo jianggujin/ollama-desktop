@@ -1,12 +1,9 @@
 <template>
-  <el-dialog v-model="visible"
-    title="新建会话"
-    width="500"
-    >
+  <el-dialog v-model="visible" :title="isUpdate ? '修改会话' : '新建会话'" width="500">
     <el-form ref="sessionFormRef"
       :model="sessionFormData"
       :rules="sessionFormRule"
-      label-width="auto"
+      label-width="120px"
       label-position="left"
       v-loading.body.fullscreen.lock="loading"
       :element-loading-text="loadingOptions.text"
@@ -143,7 +140,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateSession">确认</el-button>
+        <el-button type="primary" @click="handleSubmitSession">确认</el-button>
       </div>
     </template>
   </el-dialog>
@@ -151,7 +148,7 @@
 
 <script setup>
 import { ElMessage } from 'element-plus'
-import { CreateSession } from '@/go/app/Chat.js'
+import { CreateSession, UpdateSession } from '@/go/app/Chat.js'
 import { runQuietly } from '~/utils/wrapper.js'
 import { List as listModels } from '@/go/app/Ollama.js'
 import { humanize } from '~/utils/humanize.js'
@@ -175,7 +172,7 @@ const emptyData = {
 
 const loading = ref(false)
 
-const emits = defineEmits(['create'])
+const emits = defineEmits(['create', 'update'])
 
 const models = ref([])
 const visible = ref(false)
@@ -195,6 +192,7 @@ const sessionFormRule = ref({
         callback()
       }
     }, trigger: 'blur' }],
+  keepAlive: [{ pattern: /^(([1-9][0-9]*)(ns|us|ms|s|m|h))+$/, message: '存活时间不合法', trigger: 'blur' }],
   optionsSeed: [{ validator: (rule, value, callback) => {
     if (value) {
       value = parseInt(value)
@@ -209,7 +207,7 @@ const sessionFormRule = ref({
     if (value) {
       value = parseInt(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('令牌数量不合法，必须为正整数'))
         return
       }
     }
@@ -219,7 +217,7 @@ const sessionFormRule = ref({
     if (value) {
       value = parseInt(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('TopK不合法，必须为正整数'))
         return
       }
     }
@@ -227,9 +225,9 @@ const sessionFormRule = ref({
   }, trigger: 'blur' }],
   optionsTopP: [{ validator: (rule, value, callback) => {
     if (value) {
-      value = parseInt(value)
+      value = parseFloat(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('TopP不合法，必须为正数'))
         return
       }
     }
@@ -239,7 +237,7 @@ const sessionFormRule = ref({
     if (value) {
       value = parseInt(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('上下文长度不合法，必须为正整数'))
         return
       }
     }
@@ -247,9 +245,9 @@ const sessionFormRule = ref({
   }, trigger: 'blur' }],
   optionsTemperature: [{ validator: (rule, value, callback) => {
     if (value) {
-      value = parseInt(value)
+      value = parseFloat(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('温度不合法，必须为正数'))
         return
       }
     }
@@ -257,15 +255,17 @@ const sessionFormRule = ref({
   }, trigger: 'blur' }],
   optionsRepeatPenalty: [{ validator: (rule, value, callback) => {
     if (value) {
-      value = parseInt(value)
+      value = parseFloat(value)
       if (isNaN(value) || value <= 0) {
-        callback(new Error('随机种子不合法，必须为正整数'))
+        callback(new Error('惩罚不合法，必须为正数'))
         return
       }
     }
     callback()
   }, trigger: 'blur' }]
 })
+
+const isUpdate = computed(() => !!sessionFormData.value.id)
 
 function loadModels() {
   loading.value = true
@@ -279,27 +279,43 @@ function loadModels() {
       item.quantizationLevel = item.details?.quantization_level
       return item
     })
+
+    sessionFormRef.value?.clearValidate()
   }, _ => { ElMessage.error('获取本地模型列表失败') }, () => { loading.value = false })
 }
 
-function handleCreateSession() {
+function handleSubmitSession() {
   sessionFormRef.value?.validate().then(_ => {
     loading.value = true
-    runQuietly(() => CreateSession({
+    const fn = isUpdate.value ? UpdateSession : CreateSession
+
+    const formData = {
+      id: sessionFormData.value.id || '',
       sessionName: sessionFormData.value.sessionName,
       modelName: sessionFormData.value.modelName,
-      prompts: '',
-      messageHistoryCount: sessionFormData.value.messageHistoryCount
-    }), data => {
+      messageHistoryCount: parseInt(sessionFormData.value.messageHistoryCount),
+      keepAlive: sessionFormData.value.keepAlive,
+      systemMessage: sessionFormData.value.systemMessage,
+      options: JSON.stringify({
+        seed: sessionFormData.value.optionsSeed,
+        numPredict: sessionFormData.value.optionsNumPredict,
+        topK: sessionFormData.value.optionsTopK,
+        topP: sessionFormData.value.optionsTopP,
+        numCtx: sessionFormData.value.optionsNumCtx,
+        temperature: sessionFormData.value.optionsTemperature,
+        repeatPenalty: sessionFormData.value.optionsRepeatPenalty
+      })
+    }
+    runQuietly(() => fn(formData), data => {
       visible.value = false
-      emits('create', data)
-    }, _ => { ElMessage.error('添加会话失败') }, _ => { loading.value = false })
+      emits(isUpdate.value ? 'update' : 'create', data)
+    }, _ => { ElMessage.error((isUpdate.value ? '修改' : '新建') + '会话失败') }, _ => { loading.value = false })
   })
 }
 
-function showDialog() {
+function showDialog(session) {
   loadModels()
-  sessionFormData.value = { ...emptyData }
+  sessionFormData.value = { ...emptyData, ...session }
   visible.value = true
   sessionFormRef.value?.clearValidate()
 }

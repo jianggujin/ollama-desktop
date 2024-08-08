@@ -10,7 +10,7 @@
       <session-panel @change="handleSessionChange"/>
     </el-aside>
     <el-main style="display: flex;flex-direction: column;">
-      <el-scrollbar style="flex: 1;" ref="chatScrollbar">
+      <el-scrollbar style="flex: 1;" ref="chatScrollbar" @scroll="handleChatScroll">
         <div ref="chatContent" style="margin: 10px auto 0 auto;width: 80%;position: relative;display: flex;flex-direction: column;gap: 16px;">
           <div v-for="(message, index) in messages" :key="index" :class="{question: message.role == 'user', answer: message.role == 'assistant' || message.id == 'thinking'}">
             <template v-if="message.role == 'user'">
@@ -74,6 +74,7 @@ const messages = ref([])
 const question = ref('')
 const answering = ref(false)
 const canSendQuestion = computed(() => !answering.value && !isAllWhitespace(question.value))
+const hasHistory = ref(false)
 
 const chatScrollbar = ref(null)
 const chatContent = ref(null)
@@ -87,6 +88,7 @@ watch(() => sessionId.value, newValue => {
   if (!newValue) {
     return
   }
+  hasHistory.value = true
   loadSessionMessages(true)
 })
 
@@ -115,6 +117,10 @@ function loadSessionMessages(first) {
   loading.value = true
   runQuietly(() => SessionHistoryMessages({ sessionId: sessionId.value, nextMarker: messages.value[0]?.id || '' }), data => {
     data = data || []
+    if (data.length === 0) {
+      hasHistory.value = false
+      return
+    }
     messages.value.unshift(...data)
     if (first) {
       scrollToBottom()
@@ -141,18 +147,18 @@ function sendQuestion() {
   answering.value = true
 
   loading.value = true
-  runQuietly(() => Conversation({ sessionId: sessionId.value, content: question.value }), ({ id, sessionId, role, content, success, createdAt, answerId }) => {
+  runQuietly(() => Conversation({ sessionId: sessionId.value, content: question.value }), ({ id, sessionId, content, createdAt }) => {
     question.value = ''
-    messages.value.push({ id, sessionId, role, content, success, createdAt })
+    messages.value.push({ id, sessionId, role: 'user', content, success: true, createdAt })
     messages.value.push({ id: 'thinking', sessionId, role: '', content: '思考中...', success: false, createdAt })
     scrollToBottom()
 
-    currentAnswerId = answerId
+    currentAnswerId = id
     runQuietly(() => {
-      EventsOn(answerId, (answerContent, answerRole, answerDone, answerSuccess) => {
+      EventsOn(id, (answerContent, answerDone, answerSuccess) => {
         const lastMessage = messages.value[messages.value.length - 1]
         if (lastMessage.id === 'thinking') {
-          messages.value[messages.value.length - 1] = { id: currentAnswerId, sessionId, role: answerRole, content: answerContent, answerSuccess, createdAt }
+          messages.value[messages.value.length - 1] = { id: currentAnswerId, sessionId, role: 'assistant', content: answerContent, answerSuccess, createdAt }
           finishAnswer()
           return
         }
@@ -168,6 +174,12 @@ function sendQuestion() {
       })
     })
   }, _ => { ElMessage.error('发送消息失败') }, () => { loading.value = false })
+}
+
+function handleChatScroll({ scrollTop }) {
+  if (scrollTop < 20 && hasHistory.value) {
+    loadSessionMessages()
+  }
 }
 
 onMounted(() => {

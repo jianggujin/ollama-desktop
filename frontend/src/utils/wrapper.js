@@ -26,7 +26,13 @@ export function runQuietly(fn, successCallback, errorCallback, finallyCallback) 
   try {
     const promise = fn()
     if (isPromise(promise)) {
-      promise.then(successCallback).catch(errorCallback).finally(finallyCallback)
+      promise
+        .then(successCallback)
+        .catch(e => {
+          console.error(e)
+          errorCallback()
+        })
+        .finally(finallyCallback)
     } else {
       successCallback()
     }

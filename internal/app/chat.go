@@ -9,6 +9,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"ollama-desktop/internal/log"
 	olm "ollama-desktop/internal/ollama"
+	"strconv"
 	"time"
 )
 
@@ -76,6 +77,16 @@ func (c *Chat) DeleteSession(id string) (string, error) {
 		}
 		return nil
 	})
+}
+
+func (c *Chat) UpdateSession(session *SessionModel) (*SessionModel, error) {
+	session.UpdatedAt = session.CreatedAt
+
+	sqlStr := `update t_session set session_name = ?, model_name = ?, message_history_count = ?, keep_alive = ?, system_message = ?, options = ?, updated_at = ?
+               where id = ?`
+	_, err := dao.db().ExecContext(app.ctx, sqlStr, session.SessionName, session.ModelName,
+		session.MessageHistoryCount, session.KeepAlive, session.SystemMessage, session.Options, session.UpdatedAt, session.Id)
+	return session, err
 }
 
 func (c *Chat) GetSession(id string) (*SessionModel, error) {
@@ -235,7 +246,7 @@ func (c *Chat) createChatMessage(message *ChatMessageModel) error {
 	sqlStr := `insert into t_chat_message(id, session_id, question_content, answer_content, total_duration, load_duration, 
                    prompt_eval_count, prompt_eval_duration, eval_count, eval_duration, done_reason,
                    is_success, created_at, updated_at) 
-               values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+               values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	if _, err := dao.db().ExecContext(app.ctx, sqlStr, message.Id, message.SessionId, message.QuestionContent,
 		message.AnswerContent, message.TotalDuration, message.LoadDuration,
 		message.PromptEvalCount, message.PromptEvalDuration, message.EvalCount, message.EvalDuration, message.DoneReason,
@@ -333,9 +344,32 @@ func (c *Chat) chat(session *SessionModel, message *ChatMessageModel) {
 	}
 	var options map[string]interface{}
 	if session.Options != "" {
-		if err := json.Unmarshal([]byte(session.Options), &options); err != nil {
+		var sessionOptions map[string]string
+		if err := json.Unmarshal([]byte(session.Options), &sessionOptions); err != nil {
 			c.emitChatError(message, err)
 			return
+		}
+		options = make(map[string]interface{})
+		for name, value := range sessionOptions {
+			if value == "" {
+				continue
+			}
+			switch name {
+			case "seed":
+				options["seed"], _ = strconv.Atoi(value)
+			case "numPredict":
+				options["num_predict"], _ = strconv.Atoi(value)
+			case "topK":
+				options["top_k"], _ = strconv.Atoi(value)
+			case "topP":
+				options["top_p"], _ = strconv.ParseFloat(value, 32)
+			case "numCtx":
+				options["num_ctx"], _ = strconv.Atoi(value)
+			case "temperature":
+				options["temperature"], _ = strconv.ParseFloat(value, 32)
+			case "repeatPenalty":
+				options["repeat_penalty"], _ = strconv.ParseFloat(value, 32)
+			}
 		}
 	}
 

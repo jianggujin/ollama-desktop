@@ -18,7 +18,7 @@
               <el-button :icon="Delete" size="large" link type="danger"></el-button>
             </template>
           </el-popconfirm> -->
-          <el-dropdown trigger="click" @command="handleMoreCommand(session, $event)">
+          <el-dropdown trigger="click" @command="handleMoreCommand(session, $event, index)">
             <!-- <i-ep-more/> -->
             <i-ep-more-filled class="more"/>
             <template #dropdown>
@@ -34,7 +34,7 @@
     <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
       <el-button :icon="DocumentAdd" @click="showCreateSession">添加会话</el-button>
     </div>
-    <create-sesion-dialog ref="createSesionDialog" @create="handleCreated"/>
+    <create-sesion-dialog ref="createSesionDialog" @create="handleCreated" @update="handleUpdated"/>
   </div>
 </template>
 
@@ -50,16 +50,16 @@ const emits = defineEmits(['change'])
 
 const loading = ref(false)
 
-const sessions = ref([{ id: 'dd', sessionName: '测试', modelName: 'qwen2:0.5b' }, { id: 'dsd', sessionName: '测试', modelName: 'qwen2:0.5b' }])
-const sessionId = ref('dd')
+const sessions = ref([])
+const sessionId = ref('')
 
 const createSesionDialog = ref(null)
 
 function loadSessions() {
   loading.value = true
   runQuietly(Sessions, data => {
-    sessions.value = data
-    if (data.length) {
+    sessions.value = data || []
+    if (sessions.value.length) {
       sessionId.value = data.find(item => item.id === sessionId.value)?.id || data[0].id
     } else {
       showCreateSession()
@@ -70,7 +70,7 @@ function loadSessions() {
 onMounted(loadSessions)
 
 function showCreateSession() {
-  createSesionDialog.value.showDialog()
+  createSesionDialog.value.showDialog({})
 }
 
 function handleCreated(session) {
@@ -78,26 +78,32 @@ function handleCreated(session) {
   sessionId.value = session.id
 }
 
-function handleMoreCommand(session, command) {
-  console.log(command)
+function handleUpdated(session) {
+  const index = sessions.value.findIndex(item => item.id === session.id)
+  if (index > -1) {
+    sessions.value[index] = session
+  }
+}
+
+function handleMoreCommand(session, command, index) {
+  if (command === 'delete') {
+    handleDeleteSesson(session, index)
+  } else if (command === 'edit') {
+    createSesionDialog.value.showDialog(session)
+  }
 }
 
 function handleDeleteSesson(session, index) {
   loading.value = true
   runQuietly(() => DeleteSession(session.id), _ => {
-    // 删除选中的会话，需要切换会话
-    if (sessionId.value === session.id) {
-      // 下面有数据
-      if (index < sessions.value.length - 1) {
-        sessionId.value = sessions.value[index + 1].id
-      } else if (index > 0) { // 上面有数据
-        sessionId.value = sessions.value[index - 1].id
-      } else {
-        sessionId.value = ''
-      }
-      return
-    }
     sessions.value.splice(index, 1)
+    if (index < sessions.value.length) {
+      sessionId.value = sessions.value[index].id
+    } else if (sessions.value.length > 0) {
+      sessionId.value = sessions.value[sessions.value.length - 1].id
+    } else {
+      sessionId.value = ''
+    }
   }, _ => { ElMessage.error('获取会话列表失败') }, () => { loading.value = false })
 }
 

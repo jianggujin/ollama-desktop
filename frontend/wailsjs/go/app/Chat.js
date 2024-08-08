@@ -25,3 +25,7 @@ export function SessionHistoryMessages(arg1) {
 export function Sessions() {
   return window['go']['app']['Chat']['Sessions']();
 }
+
+export function UpdateSession(arg1) {
+  return window['go']['app']['Chat']['UpdateSession'](arg1);
+}

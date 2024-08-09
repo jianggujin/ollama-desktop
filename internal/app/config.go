@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"ollama-desktop/internal/config"
 	"ollama-desktop/internal/log"
 	"time"
 )
@@ -73,4 +74,114 @@ func (c *Config) set(key, value string) error {
 		}
 		return
 	})
+}
+
+type OllamaConfig struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Port   string `json:"port"`
+}
+
+func (c *Config) OllamaConfigs() (*OllamaConfig, error) {
+	configs, err := c.configs(false)
+	if err != nil {
+		return nil, err
+	}
+	ollamaHost := config.Config.Ollama.Host
+	ollamaConfig := &OllamaConfig{
+		Scheme: ollamaHost.Scheme,
+		Host:   ollamaHost.Host,
+		Port:   ollamaHost.Port,
+	}
+
+	for name, value := range configs {
+		switch name {
+		case configOllamaScheme:
+			ollamaConfig.Scheme = value
+		case configOllamaHost:
+			ollamaConfig.Host = value
+		case configOllamaPort:
+			ollamaConfig.Port = value
+		}
+	}
+	return ollamaConfig, nil
+}
+
+func (c *Config) SaveOllamaConfigs(request *OllamaConfig) error {
+	if err := c.set(configOllamaScheme, request.Scheme); err != nil {
+		return err
+	}
+	if err := c.set(configOllamaHost, request.Host); err != nil {
+		c.configs(true)
+		return err
+	}
+	if err := c.set(configOllamaPort, request.Port); err != nil {
+		c.configs(true)
+		return err
+	}
+	return nil
+}
+
+type ProxyConfig struct {
+	Scheme   string `json:"scheme"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (c *Config) ProxyConfigs() (*ProxyConfig, error) {
+	configs, err := c.configs(false)
+	if err != nil {
+		return nil, err
+	}
+	proxyConfig := &ProxyConfig{}
+
+	if config.Config.Proxy != nil {
+		proxy := config.Config.Proxy
+		proxyConfig.Scheme = proxy.Scheme
+		proxyConfig.Host = proxy.Host
+		proxyConfig.Port = proxy.Port
+		proxyConfig.Username = proxy.Username
+		proxyConfig.Password = proxy.Password
+	}
+
+	for name, value := range configs {
+		switch name {
+		case configProxyScheme:
+			proxyConfig.Scheme = value
+		case configProxyHost:
+			proxyConfig.Host = value
+		case configProxyPort:
+			proxyConfig.Port = value
+		case configProxyUsername:
+			proxyConfig.Username = value
+		case configProxyPassword:
+			proxyConfig.Password = value
+		}
+	}
+	return proxyConfig, nil
+}
+
+func (c *Config) SaveProxyConfigs(request *ProxyConfig) error {
+	if err := c.set(configProxyScheme, request.Scheme); err != nil {
+		return err
+	}
+	if err := c.set(configProxyHost, request.Host); err != nil {
+		c.configs(true)
+		return err
+	}
+	if err := c.set(configProxyPort, request.Port); err != nil {
+		c.configs(true)
+		return err
+	}
+	if err := c.set(configProxyUsername, request.Username); err != nil {
+		c.configs(true)
+		return err
+	}
+	if err := c.set(configProxyPassword, request.Password); err != nil {
+		c.configs(true)
+		return err
+	}
+	return nil
 }

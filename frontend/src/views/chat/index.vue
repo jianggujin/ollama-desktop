@@ -129,16 +129,17 @@ function loadSessionMessages(first) {
   }, _ => { ElMessage.error('获取会话历史消息失败') }, () => { loading.value = false })
 }
 
-let currentAnswerId = ''
+let timeout
+function lazyloadSessionMessages() {
+  if (timeout) {
+    clearTimeout(timeout)
+    timeout = null
+  }
 
-function finishAnswer() {
-  runQuietly(() => {
-    EventsOff(currentAnswerId)
-    currentAnswerId = ''
-  })
-  scrollToBottom()
-  answering.value = false
+  timeout = setTimeout(loadSessionMessages, 300)
 }
+
+let currentAnswerId = ''
 
 function sendQuestion() {
   if (!canSendQuestion.value) {
@@ -159,13 +160,16 @@ function sendQuestion() {
         const lastMessage = messages.value[messages.value.length - 1]
         if (lastMessage.id === 'thinking') {
           messages.value[messages.value.length - 1] = { id: currentAnswerId, sessionId, role: 'assistant', content: answerContent, answerSuccess, createdAt }
-          finishAnswer()
+          scrollToBottom()
           return
         }
         // 回答失败或完成
         if (!answerSuccess || answerDone) {
           lastMessage.content = answerContent
-          finishAnswer()
+          runQuietly(() => EventsOff(currentAnswerId))
+          currentAnswerId = ''
+
+          answering.value = false
           return
         }
         // 回答中
@@ -177,8 +181,8 @@ function sendQuestion() {
 }
 
 function handleChatScroll({ scrollTop }) {
-  if (scrollTop < 20 && hasHistory.value) {
-    loadSessionMessages()
+  if (scrollTop < 50 && hasHistory.value) {
+    lazyloadSessionMessages()
   }
 }
 
@@ -190,10 +194,8 @@ onMounted(() => {
 onUnmounted(() => {
   chatContainer.removeEventListener('click', handleChatClick)
   if (currentAnswerId) {
-    runQuietly(() => {
-      EventsOff(currentAnswerId)
-      currentAnswerId = ''
-    })
+    runQuietly(() => EventsOff(currentAnswerId))
+    currentAnswerId = ''
   }
 })
 

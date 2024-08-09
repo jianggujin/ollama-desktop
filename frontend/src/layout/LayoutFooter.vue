@@ -8,6 +8,7 @@
   >
     <div class="footer">
       <el-text style="margin-left: 10px;margin-right: 5px;">Ollama</el-text>
+      <el-text v-if="ollamaStore.version" style="margin-right: 5px;">{{ ollamaStore.version }}</el-text>
       <i-ep-circle-check-filled v-if="ollamaStore.started" style="color: var(--el-color-success);font-size: var(--el-font-size-base);" />
       <i-ep-circle-close-filled v-else style="color: var(--el-color-warning);font-size: var(--el-font-size-base);" />
       <el-text v-if="ollamaStore.canStart" style="margin-left: 5px;cursor: pointer;" type="primary" @click="startOllamaApp">启动服务</el-text>
@@ -81,10 +82,14 @@ let autoStarted = false
 onMounted(() => {
   runQuietly(Heartbeat)
   runQuietly(() => {
-    EventsOn('ollamaHeartbeat', (installed, started, canStart) => {
+    EventsOn('ollamaHeartbeat', (installed, started, canStart, version) => {
       ollamaStore.installed = installed
       ollamaStore.started = started
       ollamaStore.canStart = canStart
+      ollamaStore.version = version
+      if (started) {
+        autoStarted = true
+      }
       if (canStart && !autoStarted) {
         autoStarted = true
         startOllamaApp()

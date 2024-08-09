@@ -386,10 +386,11 @@ func (c *Chat) chat(session *SessionModel, message *ChatMessageModel) {
 	err = ollama.newApiClient().Chat(app.ctx, request, func(response olm.ChatResponse) error {
 		respMessage := response.Message
 		buffer.WriteString(respMessage.Content)
+		fullContent := buffer.String()
 		if response.Done {
 			message.UpdatedAt = response.CreatedAt
 			message.IsSuccess = true
-			message.AnswerContent = buffer.String()
+			message.AnswerContent = fullContent
 			message.DoneReason = response.DoneReason
 			metrics := response.Metrics
 			message.TotalDuration = metrics.TotalDuration
@@ -399,7 +400,7 @@ func (c *Chat) chat(session *SessionModel, message *ChatMessageModel) {
 			message.EvalCount = metrics.EvalCount
 			message.EvalDuration = metrics.EvalDuration
 		}
-		runtime.EventsEmit(app.ctx, message.Id, buffer.String(), response.Done, true)
+		runtime.EventsEmit(app.ctx, message.Id, fullContent, response.Done, true)
 		return nil
 	})
 	if err != nil {

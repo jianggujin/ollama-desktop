@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="isUpdate ? '修改会话' : '新建会话'" width="500">
+  <el-dialog v-model="visible" :title="isUpdate ? '修改会话' : '新建会话'" width="800">
     <el-form ref="sessionFormRef"
       :model="sessionFormData"
       :rules="sessionFormRule"
@@ -10,132 +10,142 @@
       :element-loading-spinner="loadingOptions.svg"
       :element-loading-svg-view-box="loadingOptions.svgViewBox"
       :element-loading-background="loadingOptions.background">
-      <el-form-item label="会话名称" prop="sessionName">
-        <el-input v-model="sessionFormData.sessionName" placeholder="请输入会话名称"/>
-      </el-form-item>
-      <el-form-item prop="modelName">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span>模型名称</span>
-            <el-tooltip effect="dark" content="会话聊天中使用的模型" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-select v-model="sessionFormData.modelName" placeholder="请选择会话模型" style="width: 100%">
-          <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
-        </el-select>
-      </el-form-item>
-      <el-form-item prop="messageHistoryCount">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span>历史轮次</span>
-            <el-tooltip effect="dark" content="会话聊天中使用的历史会话最大轮次，用于构建聊天消息的上下文信息" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.messageHistoryCount" placeholder="请输入最大历史轮次"/>
-      </el-form-item>
-      <el-form-item prop="keepAlive">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">存活时间</span>
-            <el-tooltip effect="dark" content="模型被加载到内存中后，在内存中保留的时间，例如：5m、2h45m，可用单位有：ns、us、ms、s、m、h" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.keepAlive" placeholder="请输入存活时间"/>
-      </el-form-item>
+      <div style="display: flex;gap: 10px;">
+        <el-form-item label="会话名称" prop="sessionName" style="flex: 1;">
+          <el-input v-model="sessionFormData.sessionName" placeholder="请输入会话名称"/>
+        </el-form-item>
+        <el-form-item prop="modelName" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span>模型名称</span>
+              <el-tooltip effect="dark" content="会话聊天中使用的模型" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-select v-model="sessionFormData.modelName" placeholder="请选择会话模型" style="width: 100%">
+            <el-option v-for="(item, index) in models" :key="index" :label="item.name" :value="item.name"/>
+          </el-select>
+        </el-form-item>
+      </div>
+      <div style="display: flex;gap: 10px;">
+        <el-form-item prop="messageHistoryCount" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span>历史轮次</span>
+              <el-tooltip effect="dark" content="会话聊天中使用的历史会话最大轮次，用于构建聊天消息的上下文信息" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.messageHistoryCount" placeholder="请输入最大历史轮次"/>
+        </el-form-item>
+        <el-form-item prop="keepAlive" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">存活时间</span>
+              <el-tooltip effect="dark" content="模型被加载到内存中后，在内存中保留的时间，例如：5m、2h45m，可用单位有：ns、us、ms、s、m、h" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.keepAlive" placeholder="请输入存活时间"/>
+        </el-form-item>
+      </div>
       <el-form-item prop="systemMessage">
         <template #label>
           <div style="display:flex; align-items: center;gap:5px;">
             <span style="margin-left: 10.38px;">系统消息</span>
-            <el-tooltip effect="dark" content="设置系统消息后，在与大模型聊天时会自动将其作为system角色的消息插入到第一条聊天信息前" placement="right">
+            <el-tooltip effect="dark" content="设置系统消息后，在与大模型聊天时会自动将其作为system角色的消息插入到第一条聊天信息前" placement="bottom">
               <i-ep-question-filled style="cursor: pointer;"/>
             </el-tooltip>
           </div>
         </template>
         <el-input v-model="sessionFormData.systemMessage" type="textarea" resize="none" placeholder="请输入系统消息" :autosize="{ minRows: 2, maxRows: 6 }"/>
       </el-form-item>
-      <el-form-item prop="optionsSeed">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">随机种子</span>
-            <el-tooltip effect="dark" content="用于控制生成结果的随机性。如果设定相同的种子，可以得到一致的输出" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsSeed" placeholder="请输入随机种子"/>
-      </el-form-item>
-      <el-form-item prop="optionsNumPredict">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">令牌数量</span>
-            <el-tooltip effect="dark" content="要生成的令牌数量，即模型应预测的最大令牌数" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsNumPredict" placeholder="请输入令牌数量"/>
-      </el-form-item>
-      <el-form-item prop="optionsTopK">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">TopK</span>
-            <el-tooltip effect="dark" content="在预测时，从最高概率的K个令牌中选择下一个令牌。较高的K值增加生成的多样性" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsTopK" placeholder="请输入TopK"/>
-      </el-form-item>
-      <el-form-item prop="optionsTopP">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">TopP</span>
-            <el-tooltip effect="dark" content="使用nucleus sampling（核采样）进行生成，从概率累积超过P的令牌中选择" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsTopP" placeholder="请输入TopP"/>
-      </el-form-item>
+      <div style="display: flex;gap: 10px;">
+        <el-form-item prop="optionsSeed" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">随机种子</span>
+              <el-tooltip effect="dark" content="用于控制生成结果的随机性。如果设定相同的种子，可以得到一致的输出" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsSeed" placeholder="请输入随机种子"/>
+        </el-form-item>
+        <el-form-item prop="optionsNumPredict" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">令牌数量</span>
+              <el-tooltip effect="dark" content="要生成的令牌数量，即模型应预测的最大令牌数" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsNumPredict" placeholder="请输入令牌数量"/>
+        </el-form-item>
+      </div>
+      <div style="display: flex;gap: 10px;">
+        <el-form-item prop="optionsTopK" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">TopK</span>
+              <el-tooltip effect="dark" content="在预测时，从最高概率的K个令牌中选择下一个令牌。较高的K值增加生成的多样性" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsTopK" placeholder="请输入TopK"/>
+        </el-form-item>
+        <el-form-item prop="optionsTopP" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">TopP</span>
+              <el-tooltip effect="dark" content="使用nucleus sampling（核采样）进行生成，从概率累积超过P的令牌中选择" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsTopP" placeholder="请输入TopP"/>
+        </el-form-item>
+      </div>
       <el-form-item prop="optionsNumCtx">
         <template #label>
           <div style="display:flex; align-items: center;gap:5px;">
             <span style="margin-left: 10.38px;">上下文长度</span>
-            <el-tooltip effect="dark" content="模型使用的上下文长度，影响模型可以记住的前文长度" placement="right">
+            <el-tooltip effect="dark" content="模型使用的上下文长度，影响模型可以记住的前文长度" placement="bottom">
               <i-ep-question-filled style="cursor: pointer;"/>
             </el-tooltip>
           </div>
         </template>
         <el-input v-model="sessionFormData.optionsNumCtx" placeholder="请输入上下文长度"/>
       </el-form-item>
-      <el-form-item prop="optionsTemperature">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">温度</span>
-            <el-tooltip effect="dark" content="控制生成文本的随机性。较高的温度值会使生成的输出更加随机，而较低的值则使输出更加确定" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsTemperature" placeholder="请输入温度"/>
-      </el-form-item>
-      <el-form-item prop="optionsRepeatPenalty">
-        <template #label>
-          <div style="display:flex; align-items: center;gap:5px;">
-            <span style="margin-left: 10.38px;">惩罚</span>
-            <el-tooltip effect="dark" content="为重复的令牌施加惩罚，以减少生成过程中的重复内容" placement="right">
-              <i-ep-question-filled style="cursor: pointer;"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-input v-model="sessionFormData.optionsRepeatPenalty" placeholder="请输入惩罚"/>
-      </el-form-item>
+      <div style="display: flex;gap: 10px;">
+        <el-form-item prop="optionsTemperature" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">温度</span>
+              <el-tooltip effect="dark" content="控制生成文本的随机性。较高的温度值会使生成的输出更加随机，而较低的值则使输出更加确定" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsTemperature" placeholder="请输入温度"/>
+        </el-form-item>
+        <el-form-item prop="optionsRepeatPenalty" style="flex: 1;">
+          <template #label>
+            <div style="display:flex; align-items: center;gap:5px;">
+              <span style="margin-left: 10.38px;">惩罚</span>
+              <el-tooltip effect="dark" content="为重复的令牌施加惩罚，以减少生成过程中的重复内容" placement="bottom">
+                <i-ep-question-filled style="cursor: pointer;"/>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-input v-model="sessionFormData.optionsRepeatPenalty" placeholder="请输入惩罚"/>
+        </el-form-item>
+      </div>
     </el-form>
     <template #footer>
       <div class="dialog-footer">

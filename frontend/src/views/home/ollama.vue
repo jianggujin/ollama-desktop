@@ -9,7 +9,7 @@
     <div style="display: flex;align-items: center;justify-content: center;margin-top: 15px;">
       <el-result :title="title" :sub-title="subTitle" style="--el-result-extra-margin-top: 10px;">
         <template #icon>
-          <img src="/ollama.png" />
+          <img src="/ollama.png" @click="openOllamaWebsite" style="cursor: pointer;"/>
         </template>
         <template v-if="!ollamaStore.installed" #extra>
           <el-text style="cursor: pointer;" type="primary" @click="openDownload">点此下载安装</el-text>
@@ -46,12 +46,11 @@ import loadingOptions from '~/utils/loading.js'
 const loading = ref(false)
 
 const ollamaStore = useOllamaStore()
-const version = ref('')
 const envs = ref([])
 
 const title = computed(() => {
-  if (version.value) {
-    return 'Ollama ' + version.value
+  if (ollamaStore.version) {
+    return 'Ollama ' + ollamaStore.version
   }
   return 'Ollama'
 })
@@ -62,20 +61,18 @@ const subTitle = computed(() => {
 
 onMounted(() => {
   loading.value = true
-  runQuietly(Version, data => { version.value = data }, _ => ElMessage.error('获取Ollama版本失败'), _ => { loading.value = false })
+  // runQuietly(Version, data => { version.value = data }, _ => ElMessage.error('获取Ollama版本失败'), _ => { loading.value = false })
   runQuietly(Envs, data => { envs.value = data }, _ => ElMessage.error('获取Ollama环境信息失败'), _ => { loading.value = false })
 })
 
 function startOllamaApp() {
   loading.value = true
-  runQuietly(Start, () => {
-    ElMessage.success('启动Ollama服务成功')
-    runQuietly(Version, data => { version.value = data }, _ => ElMessage.error('获取Ollama版本失败'), _ => { loading.value = false })
-  },
-  () => {
-    loading.value = false
-    ElMessage.error('启动Ollama服务失败')
-  })
+  runQuietly(Start, _ => ElMessage.success('启动Ollama服务成功'),
+    _ => ElMessage.error('启动Ollama服务失败'), _ => { loading.value = false })
+}
+
+function openOllamaWebsite() {
+  runQuietly(() => { BrowserOpenURL('https://ollama.com/') })
 }
 
 function openDownload() {

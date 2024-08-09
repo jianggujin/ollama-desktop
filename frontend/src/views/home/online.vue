@@ -95,13 +95,41 @@ function changeCurrentPage(page) {
   handleSearch(page)
 }
 
+const cacheKey = '/home/library'
+
+function saveCache() {
+  sessionStorage.setItem(cacheKey, JSON.stringify({
+    pagination: pagination.value,
+    searchForm: searchForm.value,
+    list: list.value
+  }))
+}
+
+let inited = false
+
+onMounted(() => {
+  let cacheValue = sessionStorage.getItem(cacheKey)
+  if (cacheValue) {
+    cacheValue = JSON.parse(cacheValue)
+    pagination.value = cacheValue.pagination
+    searchForm.value = cacheValue.searchForm
+    list.value = cacheValue.list
+  } else {
+    handleSearch()
+  }
+  inited = true
+})
+
 function handleSearch(page) {
   if (searchForm.value.searchType === 'sort') {
     loading.value = true
     runQuietly(() => LibraryOnline({ q: searchForm.value.q, sort: searchForm.value.sort }), data => { list.value = data }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')
-    }, _ => { loading.value = false })
+    }, _ => {
+      saveCache()
+      loading.value = false
+    })
   } else if (searchForm.value.searchType === 'function') {
     loading.value = true
     runQuietly(() => SearchOnline({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c }), data => {
@@ -110,12 +138,18 @@ function handleSearch(page) {
     }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')
-    }, _ => { loading.value = false })
+    }, _ => {
+      saveCache()
+      loading.value = false
+    })
   }
 }
 
 let timeout
 function lazySearch() {
+  if (!inited) {
+    return
+  }
   if (timeout) {
     clearTimeout(timeout)
     timeout = null
@@ -128,10 +162,6 @@ watch(searchForm, lazySearch, {
   deep: true,
   immediate: true
 })
-
-// onMounted(() => {
-//   handleSearch()
-// })
 </script>
 
 <style lang="scss" scoped>

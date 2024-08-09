@@ -21,6 +21,8 @@ import (
 var ollama = Ollama{}
 
 type Ollama struct {
+	started bool
+	version string
 }
 
 func (o *Ollama) Host() string {
@@ -74,16 +76,23 @@ func (o *Ollama) Version() (string, error) {
 
 func (o *Ollama) Heartbeat() {
 	var installed, started bool
-
-	started = o.newApiClient().Heartbeat(app.ctx) == nil
+	client := o.newApiClient()
+	started = client.Heartbeat(app.ctx) == nil
+	if started != o.started {
+		o.started = started
+		o.version = ""
+	}
 
 	if !started {
 		installed, _ = cmd.CheckInstalled(app.ctx)
 	} else {
 		installed = true
 	}
+	if started && o.version == "" {
+		o.version, _ = client.Version(app.ctx)
+	}
 	os := gorun.GOOS
-	runtime.EventsEmit(app.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"))
+	runtime.EventsEmit(app.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"), o.version)
 }
 
 func (o *Ollama) Start() error {

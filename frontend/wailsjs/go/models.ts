@@ -142,6 +142,22 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class OllamaConfig {
+	    scheme: string;
+	    host: string;
+	    port: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OllamaConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.scheme = source["scheme"];
+	        this.host = source["host"];
+	        this.port = source["port"];
+	    }
+	}
 	export class OllamaEnvVar {
 	
 	
@@ -152,6 +168,26 @@ export namespace app {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	
+	    }
+	}
+	export class ProxyConfig {
+	    scheme: string;
+	    host: string;
+	    port: string;
+	    username: string;
+	    password: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProxyConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.scheme = source["scheme"];
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.username = source["username"];
+	        this.password = source["password"];
 	    }
 	}
 	export class SessionHistoryMessageRequest {

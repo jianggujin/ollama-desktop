@@ -72,6 +72,7 @@ func StartApp(server *assetserver.Options) error {
 			&downloader,
 			&ollama,
 			&chat,
+			&configStore,
 		},
 		Logger:             &logger{},
 		LogLevelProduction: ll,

@@ -179,15 +179,15 @@ func (o *Ollama) newApiClient() *api.Client {
 	ollamaHost := config.Config.Ollama.Host
 
 	scheme := ollamaHost.Scheme
-	if value, err := configStore.get(configOllamaScheme); err != nil && value != "" {
+	if value, err := configStore.get(configOllamaScheme); err == nil && value != "" {
 		scheme = value
 	}
 	host := ollamaHost.Host
-	if value, err := configStore.get(configOllamaHost); err != nil && value != "" {
+	if value, err := configStore.get(configOllamaHost); err == nil && value != "" {
 		host = value
 	}
 	port := ollamaHost.Port
-	if value, err := configStore.get(configOllamaPort); err != nil && value != "" {
+	if value, err := configStore.get(configOllamaPort); err == nil && value != "" {
 		port = value
 	}
 
@@ -213,19 +213,19 @@ func (o *Ollama) newOllamaClient() *ollama2.Client {
 		username = proxy.Username
 		password = proxy.Password
 	}
-	if value, err := configStore.get(configProxyScheme); err != nil && value != "" {
+	if value, err := configStore.get(configProxyScheme); err == nil && value != "" {
 		scheme = value
 	}
-	if value, err := configStore.get(configProxyHost); err != nil && value != "" {
+	if value, err := configStore.get(configProxyHost); err == nil && value != "" {
 		host = value
 	}
-	if value, err := configStore.get(configProxyPort); err != nil && value != "" {
+	if value, err := configStore.get(configProxyPort); err == nil && value != "" {
 		port = value
 	}
-	if value, err := configStore.get(configProxyUsername); err != nil && value != "" {
+	if value, err := configStore.get(configProxyUsername); err == nil && value != "" {
 		username = value
 	}
-	if value, err := configStore.get(configProxyPassword); err != nil && value != "" {
+	if value, err := configStore.get(configProxyPassword); err == nil && value != "" {
 		password = value
 	}
 	if scheme != "" && host != "" && port != "" {

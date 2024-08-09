@@ -95,6 +95,9 @@ func (c *Config) OllamaConfigs() (*OllamaConfig, error) {
 	}
 
 	for name, value := range configs {
+		if value == "" {
+			continue
+		}
 		switch name {
 		case configOllamaScheme:
 			ollamaConfig.Scheme = value
@@ -119,6 +122,7 @@ func (c *Config) SaveOllamaConfigs(request *OllamaConfig) error {
 		c.configs(true)
 		return err
 	}
+	c.configs(true)
 	return nil
 }
 
@@ -147,6 +151,9 @@ func (c *Config) ProxyConfigs() (*ProxyConfig, error) {
 	}
 
 	for name, value := range configs {
+		if value == "" {
+			continue
+		}
 		switch name {
 		case configProxyScheme:
 			proxyConfig.Scheme = value
@@ -183,5 +190,6 @@ func (c *Config) SaveProxyConfigs(request *ProxyConfig) error {
 		c.configs(true)
 		return err
 	}
+	c.configs(true)
 	return nil
 }

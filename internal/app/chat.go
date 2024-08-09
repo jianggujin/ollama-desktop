@@ -163,7 +163,7 @@ func (c *Chat) SessionHistoryMessages(request *SessionHistoryMessageRequest) ([]
             where session_id = ? and created_at < ?
             order by created_at desc
             limit ?`
-	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, timeMarker, 30)
+	rows, err := dao.db().QueryContext(app.ctx, sqlStr, request.SessionId, timeMarker, 50)
 	if err != nil {
 		log.Error().Err(err).Msg("query chat message error")
 		return nil, err
@@ -316,6 +316,8 @@ func (c *Chat) combineHistoryMessages(session *SessionModel) ([]olm.Message, err
 func (c *Chat) emitChatError(message *ChatMessageModel, err error) {
 	message.IsSuccess = false
 	message.DoneReason = err.Error()
+	message.UpdatedAt = time.Now()
+	message.AnswerContent = err.Error()
 	runtime.EventsEmit(app.ctx, message.Id, err.Error(), true, false)
 }
 

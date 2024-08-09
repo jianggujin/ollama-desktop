@@ -181,7 +181,7 @@ function sendQuestion() {
 }
 
 function handleChatScroll({ scrollTop }) {
-  if (scrollTop < 50 && hasHistory.value) {
+  if (scrollTop < 5 && hasHistory.value) {
     lazyloadSessionMessages()
   }
 }

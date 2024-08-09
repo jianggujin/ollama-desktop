@@ -5,6 +5,7 @@
       :rules="sessionFormRule"
       label-width="120px"
       label-position="left"
+      @submit.prevent
       v-loading.body.fullscreen.lock="loading"
       :element-loading-text="loadingOptions.text"
       :element-loading-spinner="loadingOptions.svg"
@@ -12,7 +13,7 @@
       :element-loading-background="loadingOptions.background">
       <div style="display: flex;gap: 10px;">
         <el-form-item label="会话名称" prop="sessionName" style="flex: 1;">
-          <el-input v-model="sessionFormData.sessionName" placeholder="请输入会话名称"/>
+          <el-input v-model.trim="sessionFormData.sessionName" placeholder="请输入会话名称"/>
         </el-form-item>
         <el-form-item prop="modelName" style="flex: 1;">
           <template #label>
@@ -38,7 +39,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.messageHistoryCount" placeholder="请输入最大历史轮次"/>
+          <el-input v-model.trim="sessionFormData.messageHistoryCount" placeholder="请输入最大历史轮次"/>
         </el-form-item>
         <el-form-item prop="keepAlive" style="flex: 1;">
           <template #label>
@@ -49,7 +50,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.keepAlive" placeholder="请输入存活时间"/>
+          <el-input v-model.trim="sessionFormData.keepAlive" placeholder="请输入存活时间"/>
         </el-form-item>
       </div>
       <el-form-item prop="systemMessage">
@@ -61,7 +62,7 @@
             </el-tooltip>
           </div>
         </template>
-        <el-input v-model="sessionFormData.systemMessage" type="textarea" resize="none" placeholder="请输入系统消息" :autosize="{ minRows: 2, maxRows: 6 }"/>
+        <el-input v-model.trim="sessionFormData.systemMessage" type="textarea" resize="none" placeholder="请输入系统消息" :autosize="{ minRows: 2, maxRows: 6 }"/>
       </el-form-item>
       <div style="display: flex;gap: 10px;">
         <el-form-item prop="optionsSeed" style="flex: 1;">
@@ -73,7 +74,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsSeed" placeholder="请输入随机种子"/>
+          <el-input v-model.trim="sessionFormData.optionsSeed" placeholder="请输入随机种子"/>
         </el-form-item>
         <el-form-item prop="optionsNumPredict" style="flex: 1;">
           <template #label>
@@ -84,7 +85,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsNumPredict" placeholder="请输入令牌数量"/>
+          <el-input v-model.trim="sessionFormData.optionsNumPredict" placeholder="请输入令牌数量"/>
         </el-form-item>
       </div>
       <div style="display: flex;gap: 10px;">
@@ -97,7 +98,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsTopK" placeholder="请输入TopK"/>
+          <el-input v-model.trim="sessionFormData.optionsTopK" placeholder="请输入TopK"/>
         </el-form-item>
         <el-form-item prop="optionsTopP" style="flex: 1;">
           <template #label>
@@ -108,7 +109,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsTopP" placeholder="请输入TopP"/>
+          <el-input v-model.trim="sessionFormData.optionsTopP" placeholder="请输入TopP"/>
         </el-form-item>
       </div>
       <el-form-item prop="optionsNumCtx">
@@ -120,7 +121,7 @@
             </el-tooltip>
           </div>
         </template>
-        <el-input v-model="sessionFormData.optionsNumCtx" placeholder="请输入上下文长度"/>
+        <el-input v-model.trim="sessionFormData.optionsNumCtx" placeholder="请输入上下文长度"/>
       </el-form-item>
       <div style="display: flex;gap: 10px;">
         <el-form-item prop="optionsTemperature" style="flex: 1;">
@@ -132,7 +133,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsTemperature" placeholder="请输入温度"/>
+          <el-input v-model.trim="sessionFormData.optionsTemperature" placeholder="请输入温度"/>
         </el-form-item>
         <el-form-item prop="optionsRepeatPenalty" style="flex: 1;">
           <template #label>
@@ -143,7 +144,7 @@
               </el-tooltip>
             </div>
           </template>
-          <el-input v-model="sessionFormData.optionsRepeatPenalty" placeholder="请输入惩罚"/>
+          <el-input v-model.trim="sessionFormData.optionsRepeatPenalty" placeholder="请输入惩罚"/>
         </el-form-item>
       </div>
     </el-form>

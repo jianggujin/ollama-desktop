@@ -9,7 +9,7 @@
   >
     <el-scrollbar ref="scrollbar">
       <div style="display: flex;align-items: center;justify-content: center;margin-top: 50px;">
-        <el-input v-model="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" maxlength="100"/>
+        <el-input v-model.trim="searchForm.q" style="width: 80%" size="large" placeholder="输入模型名称" :suffix-icon="Search" maxlength="100"/>
       </div>
       <div style="margin: 20px auto 0 auto;width: 80%;display: flex;align-items: center;justify-content: space-between;">
         <el-radio-group v-model="searchForm.searchType">
@@ -114,10 +114,11 @@ onMounted(() => {
     pagination.value = cacheValue.pagination
     searchForm.value = cacheValue.searchForm
     list.value = cacheValue.list
+    nextTick(() => { inited = true })
   } else {
+    inited = true
     handleSearch()
   }
-  inited = true
 })
 
 function handleSearch(page) {

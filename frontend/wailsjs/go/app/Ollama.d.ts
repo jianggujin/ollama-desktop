@@ -9,8 +9,6 @@ export function Envs():Promise<Array<app.OllamaEnvVar>>;
 
 export function Heartbeat():Promise<void>;
 
-export function Host():Promise<string>;
-
 export function LibraryOnline(arg1:ollama.LibraryRequest):Promise<Array<ollama.ModelInfo>>;
 
 export function List():Promise<ollama.ListResponse>;

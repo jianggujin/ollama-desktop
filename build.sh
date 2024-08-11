@@ -11,23 +11,14 @@ AllPlatform="darwin/amd64,darwin/arm64,windows/amd64,linux/amd64,linux/arm64"
 GOLDFLAGS="-s -w -X 'ollama-desktop/internal/config.BuildTime=$BuildTime'"
 GOLDFLAGS+=" -X 'ollama-desktop/internal/config.BuildVersion=$BuildVersion'"
 
-if [ "$1" == "dist" ]; then
-    echo "[ DIST ALL PLATFORM ]"
-    if [ "$2" == "nsis" ]; then
-        wails build -clean -ldflags "$GOLDFLAGS" -m -nsis -trimpath -platform "$AllPlatform"
-    else
-        wails build -clean -ldflags "$GOLDFLAGS" -m -trimpath -platform "$AllPlatform"
-    fi
+# build the current platform
+export GOOS=$(go env get GOOS | sed ':a;N;$!ba;s/^\n*//;s/\n*$//')
+export GOARCH=$(go env get GOARCH | sed ':a;N;$!ba;s/^\n*//;s/\n*$//')
+echo "[ DIST CURRENT PLATFORM GOOS=$GOOS GOARCH=$GOARCH ]"
+if [ "$1" == "nsis" ]; then
+  wails build -clean -ldflags "$GOLDFLAGS" -m -nsis -trimpath
 else
-  # build the current platform
-  export GOOS=$(go env get GOOS | sed ':a;N;$!ba;s/^\n*//;s/\n*$//')
-  export GOARCH=$(go env get GOARCH | sed ':a;N;$!ba;s/^\n*//;s/\n*$//')
-  echo "[ DIST CURRENT PLATFORM GOOS=$GOOS GOARCH=$GOARCH ]"
-  if [ "$1" == "nsis" ]; then
-      wails build -clean -ldflags "$GOLDFLAGS" -m -nsis -trimpath
-  else
-      wails build -clean -ldflags "$GOLDFLAGS" -m -trimpath
-  fi
-  echo "[ BUILD SUCCESS GOOS=$GOOS GOARCH=$GOARCH ]"
+  wails build -clean -ldflags "$GOLDFLAGS" -m -trimpath
 fi
+echo "[ BUILD SUCCESS GOOS=$GOOS GOARCH=$GOARCH ]"
 

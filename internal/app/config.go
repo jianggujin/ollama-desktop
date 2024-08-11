@@ -56,6 +56,23 @@ func (c *Config) get(key string) (string, error) {
 	return configs[key], nil
 }
 
+func (c *Config) getOrDefault(key, defValue string) (string, error) {
+	value, err := c.get(key)
+	if err != nil || value == "" {
+		return defValue, err
+	}
+	return value, nil
+}
+
+func (c *Config) accept(key string, fn func(value string)) error {
+	value, err := c.get(key)
+	if err != nil || value == "" {
+		return err
+	}
+	fn(value)
+	return nil
+}
+
 func (c *Config) set(key, value string) error {
 	configs, err := c.configs(false)
 	if err != nil {

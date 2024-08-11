@@ -24,26 +24,20 @@ const routes = [{
       component: () => import('~/views/home/library.vue'),
       props: true
     }]
-  },
-  {
+  }, {
     path: 'chat',
     component: () => import('~/views/chat/index.vue')
-  },
-  {
+  }, {
     path: 'setting',
     component: () => import('~/views/setting/index.vue')
-  },
-  {
+  }, {
     path: 'about',
     component: () => import('~/views/about/index.vue')
-  }
-  ]
-},
-{
+  }]
+}, {
   path: '/:pathMatch(.*)*',
   redirect: '/home'
-}
-]
+}]
 
 const router = createRouter({
   history: createWebHistory(), // 路由类型

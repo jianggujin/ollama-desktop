@@ -32,7 +32,10 @@
       <div style="margin: 20px auto 0 auto;width: 80%;">
         <el-empty v-if="!list.length" />
         <div class="model-item" v-for="(item, index) in list" :key="index">
-          <div><el-link style="font-weight: 500;font-size: 1.5rem;" @click="openLibrary(item.name)">{{ item.name }}</el-link></div>
+          <div style="display: flex;align-items: center;">
+            <el-link style="font-weight: 500;font-size: 1.5rem;" @click="openLibrary(item.name)">{{ item.name }}</el-link>
+            <el-tag v-show="item.archive" type="warning" round style="margin-left: 5px;">Archive</el-tag>
+          </div>
           <div style="margin-top: 10px;"><el-text style="">{{ item.description }}</el-text></div>
           <div style="margin-top: 10px;" v-if="item.tags?.length">
             <el-tag v-for="(tag, ti) in item.tags" :key="ti" :type="tag == 'Embedding' || tag == 'Vision' || tag == 'Tools' || tag == 'Code' ? 'success' : 'primary'">{{ tag }}</el-tag>
@@ -124,7 +127,7 @@ onMounted(() => {
 function handleSearch(page) {
   if (searchForm.value.searchType === 'sort') {
     loading.value = true
-    runQuietly(() => LibraryOnline({ q: searchForm.value.q, sort: searchForm.value.sort }), data => { list.value = data }, _ => {
+    runQuietly(() => LibraryOnline({ q: searchForm.value.q, sort: searchForm.value.sort }), data => { list.value = data || [] }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')
     }, _ => {
@@ -135,7 +138,7 @@ function handleSearch(page) {
     loading.value = true
     runQuietly(() => SearchOnline({ q: searchForm.value.q, p: page || 1, c: searchForm.value.c }), data => {
       pagination.value = { page: data.page, pageCount: data.pageCount }
-      list.value = data.items
+      list.value = data.items || []
     }, _ => {
       list.value = []
       ElMessage.error('查询模型失败')

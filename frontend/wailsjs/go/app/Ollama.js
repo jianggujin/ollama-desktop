@@ -14,10 +14,6 @@ export function Heartbeat() {
   return window['go']['app']['Ollama']['Heartbeat']();
 }
 
-export function Host() {
-  return window['go']['app']['Ollama']['Host']();
-}
-
 export function LibraryOnline(arg1) {
   return window['go']['app']['Ollama']['LibraryOnline'](arg1);
 }

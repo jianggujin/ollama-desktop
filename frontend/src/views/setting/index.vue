@@ -1,9 +1,9 @@
 <template>
   <div>
+    <div style="text-align: center;margin-top: 50px;">
+      <el-segmented v-model="segmentedValue" :options="segmentedOptions" />
+    </div>
     <el-scrollbar>
-      <div style="text-align: center;margin-top: 50px;">
-        <el-segmented v-model="segmentedValue" :options="segmentedOptions" />
-      </div>
       <div style="width: 500px;margin: 20px auto;">
         <component :is="componentValue"/>
       </div>

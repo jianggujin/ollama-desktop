@@ -8,9 +8,13 @@
     :element-loading-background="loadingOptions.background"
   >
     <el-scrollbar>
+      <el-alert title="This model is archived and no longer maintained." type="warning" :closable="false" center style="border-radius: 0;"/>
       <div style="margin: 50px auto 0 auto;width: 80%;" v-if="model.name">
         <div class="model-item">
-          <div><el-link style="font-weight: 500;font-size: 1.5rem;">{{ model.name }}</el-link></div>
+          <div style="display: flex;align-items: center;">
+            <el-link style="font-weight: 500;font-size: 1.5rem;" @click="openLibrary(model.name)">{{ model.name }}</el-link>
+            <el-tag v-show="model.archive" type="warning" round style="margin-left: 5px;">Archive</el-tag>
+          </div>
           <div style="margin-top: 10px;"><el-text style="">{{ model.description }}</el-text></div>
           <div style="margin-top: 10px;" v-if="model.tags?.length">
             <el-tag v-for="(tag, ti) in model.tags" :key="ti" :type="tag == 'Embedding' || tag == 'Vision' || tag == 'Tools' || tag == 'Code' ? 'success' : 'primary'">{{ tag }}</el-tag>

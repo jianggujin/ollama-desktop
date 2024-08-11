@@ -25,12 +25,8 @@ type Ollama struct {
 	version string
 }
 
-func (o *Ollama) Host() string {
-	return config.Config.Ollama.Host.String()
-}
-
-func (o *Ollama) Envs() []OllamaEnvVar {
-	envs := []OllamaEnvVar{
+func (o *Ollama) Envs() []*OllamaEnvVar {
+	envs := []*OllamaEnvVar{
 		{"OLLAMA_DEBUG", cleanEnvValue("OLLAMA_DEBUG"), "Show additional debug information (e.g. OLLAMA_DEBUG=1)"},
 		{"OLLAMA_FLASH_ATTENTION", cleanEnvValue(""), "Enabled flash attention"},
 		{"OLLAMA_HOST", cleanEnvValue(""), "IP Address for the ollama server (default 127.0.0.1:11434)"},
@@ -49,12 +45,12 @@ func (o *Ollama) Envs() []OllamaEnvVar {
 		{"OLLAMA_TMPDIR", cleanEnvValue(""), "Location for temporary files"},
 	}
 	if gorun.GOOS != "darwin" {
-		envs = append(envs, OllamaEnvVar{"CUDA_VISIBLE_DEVICES", cleanEnvValue(""), "Set which NVIDIA devices are visible"})
-		envs = append(envs, OllamaEnvVar{"HIP_VISIBLE_DEVICES", cleanEnvValue(""), "Set which AMD devices are visible"})
-		envs = append(envs, OllamaEnvVar{"ROCR_VISIBLE_DEVICES", cleanEnvValue(""), "Set which AMD devices are visible"})
-		envs = append(envs, OllamaEnvVar{"GPU_DEVICE_ORDINAL", cleanEnvValue(""), "Set which AMD devices are visible"})
-		envs = append(envs, OllamaEnvVar{"HSA_OVERRIDE_GFX_VERSION", cleanEnvValue(""), "Override the gfx used for all detected AMD GPUs"})
-		envs = append(envs, OllamaEnvVar{"OLLAMA_INTEL_GPU", cleanEnvValue(""), "Enable experimental Intel GPU detection"})
+		envs = append(envs, &OllamaEnvVar{"CUDA_VISIBLE_DEVICES", cleanEnvValue(""), "Set which NVIDIA devices are visible"})
+		envs = append(envs, &OllamaEnvVar{"HIP_VISIBLE_DEVICES", cleanEnvValue(""), "Set which AMD devices are visible"})
+		envs = append(envs, &OllamaEnvVar{"ROCR_VISIBLE_DEVICES", cleanEnvValue(""), "Set which AMD devices are visible"})
+		envs = append(envs, &OllamaEnvVar{"GPU_DEVICE_ORDINAL", cleanEnvValue(""), "Set which AMD devices are visible"})
+		envs = append(envs, &OllamaEnvVar{"HSA_OVERRIDE_GFX_VERSION", cleanEnvValue(""), "Override the gfx used for all detected AMD GPUs"})
+		envs = append(envs, &OllamaEnvVar{"OLLAMA_INTEL_GPU", cleanEnvValue(""), "Enable experimental Intel GPU detection"})
 	}
 	return envs
 }
@@ -91,8 +87,8 @@ func (o *Ollama) Heartbeat() {
 	if started && o.version == "" {
 		o.version, _ = client.Version(app.ctx)
 	}
-	os := gorun.GOOS
-	runtime.EventsEmit(app.ctx, "ollamaHeartbeat", installed, started, !started && installed && (os == "windows" || os == "darwin"), o.version)
+	goos := gorun.GOOS
+	runtime.EventsEmit(app.ctx, "ollamaHeartbeat", installed, started, !started && installed && (goos == "windows" || goos == "darwin"), o.version)
 }
 
 func (o *Ollama) Start() error {
@@ -178,18 +174,9 @@ func (o *Ollama) ModelInfoOnline(modelTag string) (*olm.ModelInfoResponse, error
 func (o *Ollama) newApiClient() *api.Client {
 	ollamaHost := config.Config.Ollama.Host
 
-	scheme := ollamaHost.Scheme
-	if value, err := configStore.get(configOllamaScheme); err == nil && value != "" {
-		scheme = value
-	}
-	host := ollamaHost.Host
-	if value, err := configStore.get(configOllamaHost); err == nil && value != "" {
-		host = value
-	}
-	port := ollamaHost.Port
-	if value, err := configStore.get(configOllamaPort); err == nil && value != "" {
-		port = value
-	}
+	scheme, _ := configStore.getOrDefault(configOllamaScheme, ollamaHost.Scheme)
+	host, _ := configStore.getOrDefault(configOllamaHost, ollamaHost.Host)
+	port, _ := configStore.getOrDefault(configOllamaPort, ollamaHost.Port)
 
 	return &api.Client{
 		Base: &url.URL{
@@ -213,21 +200,13 @@ func (o *Ollama) newOllamaClient() *ollama2.Client {
 		username = proxy.Username
 		password = proxy.Password
 	}
-	if value, err := configStore.get(configProxyScheme); err == nil && value != "" {
-		scheme = value
-	}
-	if value, err := configStore.get(configProxyHost); err == nil && value != "" {
-		host = value
-	}
-	if value, err := configStore.get(configProxyPort); err == nil && value != "" {
-		port = value
-	}
-	if value, err := configStore.get(configProxyUsername); err == nil && value != "" {
-		username = value
-	}
-	if value, err := configStore.get(configProxyPassword); err == nil && value != "" {
-		password = value
-	}
+
+	scheme, _ = configStore.getOrDefault(configProxyScheme, scheme)
+	host, _ = configStore.getOrDefault(configProxyHost, host)
+	port, _ = configStore.getOrDefault(configProxyPort, port)
+	username, _ = configStore.getOrDefault(configProxyUsername, username)
+	password, _ = configStore.getOrDefault(configProxyPassword, password)
+
 	if scheme != "" && host != "" && port != "" {
 		proxy = http.ProxyURL(o.proxyUrl(scheme, host, port, username, password))
 	}

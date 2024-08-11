@@ -17,6 +17,7 @@
       <el-table-column prop="formatModifiedAt" align="center" label="修改时间" width="180" />
       <el-table-column fixed="right" label="操作" align="center" min-width="80">
         <template #default="scope">
+          <el-button :icon="View" size="small" link type="primary" @click="$refs.showModelDialog.showDialog(scope.row)"></el-button>
           <el-popconfirm :title="`确定要删除模型(${scope.row.name})?`" @confirm="handleDelete(scope.row)">
             <template #reference>
               <el-button :icon="Delete" size="small" link type="danger"></el-button>
@@ -25,11 +26,13 @@
         </template>
       </el-table-column>
     </el-table>
+    <show-model-dialog ref="showModelDialog" />
   </el-scrollbar>
 </template>
 
 <script setup>
-import { Refresh, Delete } from '@element-plus/icons-vue'
+import ShowModelDialog from './show-model-dialog.vue'
+import { Refresh, Delete, View } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { List, Delete as deleteOllamaModel } from '@/go/app/Ollama.js'
 import { useOllamaStore } from '~/store/ollama.js'
@@ -52,6 +55,7 @@ function handleRefresh() {
       item.formatSize = humanize.filesize(item.size)
       item.parameterSize = item.details?.parameter_size
       item.quantizationLevel = item.details?.quantization_level
+      item.format = item.details?.format
       return item
     })
   }, _ => ElMessage.error('获取本地模型列表失败'), _ => { loading.value = false })
@@ -73,4 +77,10 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+:deep(.el-dialog) {
+  height: calc(100vh - 100px);
+  .el-dialog__body {
+    height: calc(100% - 32px);
+  }
+}
 </style>

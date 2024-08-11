@@ -5,6 +5,7 @@
     :element-loading-spinner="loadingOptions.svg"
     :element-loading-svg-view-box="loadingOptions.svgViewBox"
     :element-loading-background="loadingOptions.background">
+    <el-alert title="自定义Ollama服务端信息，默认为本机" :closable="false" center style="border-radius: 0;margin-bottom: 10px;"/>
     <el-form ref="ollamaFormRef" :model="ollamaFormData" :rules="ollamaFormRule" label-width="100px" label-position="left" @submit.prevent>
       <el-form-item label="协议" prop="scheme">
         <el-select v-model="ollamaFormData.scheme" placeholder="请选择协议" style="width: 100%">

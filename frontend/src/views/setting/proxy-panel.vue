@@ -5,6 +5,7 @@
     :element-loading-spinner="loadingOptions.svg"
     :element-loading-svg-view-box="loadingOptions.svgViewBox"
     :element-loading-background="loadingOptions.background">
+    <el-alert title="自定义请求在线模型时使用的网络代理信息" :closable="false" center style="border-radius: 0;margin-bottom: 10px;"/>
     <el-form ref="proxyFormRef" :model="proxyFormData" :rules="proxyFormRule" label-width="100px" label-position="left" @submit.prevent>
       <el-form-item label="协议" prop="scheme">
         <el-select v-model="proxyFormData.scheme" placeholder="请选择协议" style="width: 100%">

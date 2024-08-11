@@ -32,7 +32,7 @@
       </div>
     </el-scrollbar>
     <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
-      <el-button :icon="DocumentAdd" @click="showCreateSession">添加会话</el-button>
+      <el-button :icon="DocumentAdd" @click="showCreateSession">新建会话</el-button>
     </div>
     <create-sesion-dialog ref="createSesionDialog" @create="handleCreated" @update="handleUpdated"/>
   </div>

@@ -4,7 +4,7 @@
       <el-segmented v-model="segmentedValue" :options="segmentedOptions" />
     </div>
     <el-scrollbar>
-      <div style="width: 500px;margin: 20px auto;">
+      <div style="width: 500px;margin: 10px auto;">
         <component :is="componentValue"/>
       </div>
     </el-scrollbar>

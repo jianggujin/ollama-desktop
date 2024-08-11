@@ -52,7 +52,7 @@
           <el-table-column fixed="left" prop="name" align="center" label="名称" width="90"/>
           <el-table-column prop="content" align="center" label="内容">
             <template #default="scope">
-              <div v-if="(scope.row.content || '').replace(/[\s]+/g, ' ').length > 64">
+              <div v-if="(scope.row.content || '').replace(/[\s]+/g, ' ').length > 64" style="cursor: pointer;" @click="$refs.showInfoDialog.showDialog(scope.row.name, scope.row.content)">
                 <span>{{ scope.row.content.replace(/[\s]+/g, ' ').substring(0, 64) }}</span>
               </div>
               <span v-else>{{ (scope.row.content || '').replace(/[\s]+/g, ' ') }}</span>
@@ -63,11 +63,13 @@
       </div>
       <div style="margin: 20px auto 0 auto;width: 80%;" v-html="readme" class="readme" id="readme"></div>
       <el-image-viewer @close="closeViewer" v-if="showViewer" :url-list="previewSrcList" />
+      <show-info-dialog ref="showInfoDialog" />
     </el-scrollbar>
   </div>
 </template>
 
 <script setup>
+import ShowInfoDialog from './show-info-dialog.vue'
 import { ModelInfoOnline } from '@/go/app/Ollama.js'
 import { Pull } from '@/go/app/DownLoader.js'
 import { BrowserOpenURL, ClipboardSetText } from '@/runtime/runtime.js'
@@ -213,6 +215,12 @@ function closeViewer() {
   :deep(img) {
     max-width: 100%;
     cursor: pointer;
+  }
+}
+:deep(.el-dialog) {
+  height: calc(100vh - 100px);
+  .el-dialog__body {
+    height: calc(100% - 32px);
   }
 }
 </style>

@@ -3,7 +3,7 @@
     <div style="text-align: center;">
       <el-segmented v-model="segmentedValue" :options="segmentedOptions" />
     </div>
-    <el-scrollbar style="margin-top: 20px;height: calc(100% - 62px);">
+    <el-scrollbar ref="scrollbarRef" style="margin-top: 20px;height: calc(100% - 62px);">
       <div v-show="segmentedValue == 'basic'">
         <el-descriptions title="基本信息" :column="2" border>
           <el-descriptions-item label="名称">{{ modelBasic.name }}</el-descriptions-item>
@@ -33,6 +33,7 @@ import { Show } from '@/go/app/Ollama.js'
 const modelBasic = ref({})
 const modelInfo = ref({})
 const visible = ref(false)
+const scrollbarRef = ref(null)
 
 const segmentedValue = ref('basic')
 const segmentedOptions = [{ label: '信息', value: 'basic' },
@@ -49,6 +50,8 @@ function showDialog(model) {
   visible.value = true
   runQuietly(() => Show({ model: model.name }), data => { modelInfo.value = data }, _ => ElMessage.error('获取模型信息失败'))
 }
+
+watch(() => segmentedValue.value, _ => nextTick(() => scrollbarRef.value?.setScrollTop(0)))
 
 defineExpose({
   showDialog

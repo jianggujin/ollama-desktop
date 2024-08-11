@@ -8,7 +8,7 @@
     :element-loading-background="loadingOptions.background"
   >
     <el-scrollbar>
-      <el-alert title="This model is archived and no longer maintained." type="warning" :closable="false" center style="border-radius: 0;"/>
+      <el-alert v-if="model.archive" title="This model is archived and no longer maintained." type="warning" :closable="false" center style="border-radius: 0;"/>
       <div style="margin: 50px auto 0 auto;width: 80%;" v-if="model.name">
         <div class="model-item">
           <div style="display: flex;align-items: center;">

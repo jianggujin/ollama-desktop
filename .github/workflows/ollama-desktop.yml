@@ -21,13 +21,13 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - name: 'ollama-desktop-linux-amd64'
+          - name: 'ollama-desktop'
             platform: 'linux/amd64'
             os: 'ubuntu-latest'
-          - name: 'ollama-desktop-windows-amd64.exe'
+          - name: 'ollama-desktop'
             platform: 'windows/amd64'
             os: 'windows-latest'
-          - name: 'ollama-desktop-darwin'
+          - name: 'ollama-desktop'
             platform: 'darwin/universal'
             os: 'macos-latest'
 

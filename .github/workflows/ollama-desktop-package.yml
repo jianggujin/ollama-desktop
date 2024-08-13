@@ -1,4 +1,4 @@
-name: ollama-desktop build
+name: ollama-desktop package build
 
 on:
   # push:

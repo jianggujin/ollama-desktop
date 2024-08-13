@@ -14,5 +14,5 @@ func CheckInstalled(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return !strings.Contains(string(response), "not")
+	return !strings.Contains(string(response), "not"), nil
 }

@@ -54,7 +54,7 @@ Ollama Desktop提供了丰富的功能，包括但不限于：
 # 三、帮忙点个⭐Star
 
 开源不易，如果觉得Ollama Desktop对您有帮助的话，请帮忙在<a target="_blank" href='https://github.com/jianggujin/ollama-desktop'><img src="https://img.shields.io/github/stars/jianggujin/ollama-desktop.svg?style=flat-square&label=Stars&logo=github" alt="github star"/></a>
-的右上角点个⭐Star，您的支持是使`Ollama Desktop`变得更好最大的动力。如果您愿意的话，可以为作者捐赠一杯咖啡，万分感谢。
+的右上角点个⭐Star，您的支持是使Ollama Desktop变得更好最大的动力。如果您愿意的话，可以为作者捐赠一杯咖啡，万分感谢。
 
 <p>
   <div align="center" style="display:flex;justify-content: space-around;">
@@ -62,8 +62,8 @@ Ollama Desktop提供了丰富的功能，包括但不限于：
     <img src="static/wepay.png" width="300" height="300">
   </div>
   <div align="center" style="display:flex;justify-content: space-around;font-weight:700;">
-    <span>支付宝</span>
-    <span>微信</span>
+    <span align="center" style="width: 300px;display: inline-block;text-align: center;">支付宝</span>
+    <span align="center" style="width: 300px;display: inline-block;text-align: center;">微信</span>
   </div>
 </p>
 

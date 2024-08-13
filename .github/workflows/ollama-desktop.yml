@@ -22,13 +22,13 @@ jobs:
       matrix:
         build:
           - name: 'ollama-desktop-linux-amd64'
-            platform:  'linux/amd64'
+            platform: 'linux/amd64'
             os: 'ubuntu-latest'
           - name: 'ollama-desktop-windows-amd64.exe'
-            platform:  'windows/amd64'
+            platform: 'windows/amd64'
             os: 'windows-latest'
           - name: 'ollama-desktop-darwin.app'
-            platform:  'darwin/universal'
+            platform: 'darwin/universal'
             os: 'macos-latest'
 
     runs-on: ${{ matrix.build.os }}

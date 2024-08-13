@@ -47,4 +47,4 @@ jobs:
           package: false
           go-version: '1.20'
           node-version: '18.12.1'
-          wails-build-arg: '-s -w -X "ollama-desktop/internal/config.BuildTime=20240812" -X "ollama-desktop/internal/config.BuildVersion=v0.0.1" -trimpath'
+          wails-build-arg: '-ldflags -s -w -X "ollama-desktop/internal/config.BuildTime=20240812" -X "ollama-desktop/internal/config.BuildVersion=v0.0.1" -trimpath'

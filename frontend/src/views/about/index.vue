@@ -37,7 +37,7 @@ const loading = ref(false)
 
 const appInfo = ref({})
 const subTitle = computed(() => {
-  return (appInfo.value.Version || '') + ' ' + (appInfo.value.BuildHash || '')
+  return (appInfo.value.Version || '') + ' ' + (appInfo.value.BuildShortHash || '')
 })
 onMounted(() => {
   loading.value = true

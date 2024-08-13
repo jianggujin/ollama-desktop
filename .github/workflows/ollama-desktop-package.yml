@@ -12,7 +12,6 @@ on:
 env:
   # Necessary for most environments as build failure can occur due to OOM issues
   NODE_OPTIONS: "--max-old-space-size=4096"
-  APP_VERSION: "v0.0.1"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:

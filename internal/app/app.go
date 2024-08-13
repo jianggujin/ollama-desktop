@@ -47,7 +47,7 @@ func (a *App) onSecondInstanceLaunch(secondInstanceData options.SecondInstanceDa
 func (a *App) AppInfo() map[string]string {
 	return map[string]string{
 		"Version":   config.BuildVersion,
-		"BuildTime": config.BuildTime,
+		"BuildHash": config.BuildHash,
 		"Platform":  runtime.GOOS,
 		"Arch":      runtime.GOARCH,
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	BuildTime    string // 构建时间
+	BuildHash    string // 构建提交Hash
 	BuildVersion string // 构建版本
 )
 

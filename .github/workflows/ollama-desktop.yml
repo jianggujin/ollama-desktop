@@ -12,6 +12,7 @@ on:
 env:
   # Necessary for most environments as build failure can occur due to OOM issues
   NODE_OPTIONS: "--max-old-space-size=4096"
+  APP_VERSION: "v0.0.1"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -21,13 +22,13 @@ jobs:
       fail-fast: false
       matrix:
         build:
-          - name: 'ollama-desktop'
+          - name: 'ollama-desktop-${{ env.APP_VERSION }}'
             platform:  'linux/amd64'
             os: 'ubuntu-latest'
-          - name: 'ollama-desktop'
+          - name: 'ollama-desktop-${{ env.APP_VERSION }}.exe'
             platform:  'windows/amd64'
             os: 'windows-latest'
-          - name: 'ollama-desktop'
+          - name: 'ollama-desktop${{ env.APP_VERSION }}.app'
             platform:  'darwin/universal'
             os: 'macos-latest'
 
@@ -47,4 +48,4 @@ jobs:
           package: false
           go-version: '1.20'
           node-version: '18.12.1'
-          wails-build-arg: -ldflags "-s -w -X 'ollama-desktop/internal/config.BuildTime=20240812' -X 'ollama-desktop/internal/config.BuildVersion=v0.0.1'" -trimpath
+          wails-build-arg: -ldflags "-s -w -X 'ollama-desktop/internal/config.BuildHash=${{ github.sha }}' -X 'ollama-desktop/internal/config.BuildVersion=${{ env.APP_VERSION }}'" -trimpath

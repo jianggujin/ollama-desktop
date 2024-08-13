@@ -25,7 +25,7 @@ func init() {
 }
 
 func main() {
-	log.Info().Str("BuildTime", config.BuildTime).Str("BuildVersion", config.BuildVersion).
+	log.Info().Str("BuildHash", config.BuildHash).Str("BuildVersion", config.BuildVersion).
 		Str("Arch", runtime.GOARCH).Str("OS", runtime.GOOS).Str("GoVersion", runtime.Version()).
 		Msg("Ollama Desktop")
 

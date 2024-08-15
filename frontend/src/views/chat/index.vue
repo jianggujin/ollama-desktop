@@ -64,6 +64,7 @@ import { BrowserOpenURL, EventsOn, EventsOff } from '@/runtime/runtime.js'
 import { SessionHistoryMessages, Conversation } from '@/go/app/Chat.js'
 import { runQuietly } from '~/utils/wrapper.js'
 import loadingOptions from '~/utils/loading.js'
+import { useOllamaStore } from '~/store/ollama.js'
 
 const loading = ref(false)
 
@@ -71,9 +72,11 @@ const sessionId = ref('')
 
 const messages = ref([])
 
+const ollamaStore = useOllamaStore()
+
 const question = ref('')
 const answering = ref(false)
-const canSendQuestion = computed(() => !answering.value && !isAllWhitespace(question.value))
+const canSendQuestion = computed(() => !answering.value && ollamaStore.started && !isAllWhitespace(question.value))
 const hasHistory = ref(false)
 
 const chatScrollbar = ref(null)

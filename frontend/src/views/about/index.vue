@@ -19,7 +19,12 @@
         </el-result>
         <div>
           <el-text>Pwered By</el-text>
-          <el-text style="margin-left: 5px;cursor: pointer;" type="primary" @click="openHomePage">Jianggujin</el-text>
+          <el-text style="margin-left: 5px;cursor: pointer;" type="primary" @click="openBrowser('https://www.jianggujin.com')">Jianggujin</el-text>
+        </div>
+        <div style="margin-top: 20px;display: flex;gap: 10px;align-items: center;justify-content: center;">
+          <el-text style="cursor: pointer;" type="primary" @click="openBrowser('https://github.com/jianggujin/ollama-desktop')">项目主页</el-text>
+          <el-text>|</el-text>
+          <el-text style="cursor: pointer;" type="primary" @click="openBrowser('https://www.jianggujin.com')">个人主页</el-text>
         </div>
       </div>
     </el-scrollbar>
@@ -39,6 +44,7 @@ const appInfo = ref({})
 const subTitle = computed(() => {
   return (appInfo.value.Version || '') + ' ' + (appInfo.value.BuildShortHash || '')
 })
+
 onMounted(() => {
   loading.value = true
   runQuietly(AppInfo,
@@ -46,8 +52,8 @@ onMounted(() => {
     _ => { ElMessage.error('获取应用信息失败') }, () => { loading.value = false })
 })
 
-function openHomePage() {
-  runQuietly(() => { BrowserOpenURL('https://www.jianggujin.com') })
+function openBrowser(url) {
+  runQuietly(() => BrowserOpenURL(url))
 }
 </script>
 

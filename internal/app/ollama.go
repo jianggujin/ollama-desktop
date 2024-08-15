@@ -125,9 +125,9 @@ func (o *Ollama) Delete(request *olm.DeleteRequest) error {
 	return err
 }
 
-func (o *Ollama) Show(request olm.ShowRequest) (*olm.ShowResponse, error) {
-	log.Error().Any("request", request).Msg("SHow")
-	resp, err := o.newApiClient().Show(app.ctx, &request)
+func (o *Ollama) Show(request *olm.ShowRequest) (*olm.ShowResponse, error) {
+	log.Error().Any("request", request).Msg("Show")
+	resp, err := o.newApiClient().Show(app.ctx, request)
 	if err != nil {
 		log.Error().Err(err).Msg("show ollama model error")
 	}
@@ -145,6 +145,15 @@ func (o *Ollama) Pull(requestId string, request *olm.PullRequest) error {
 		}
 	}()
 	return nil
+}
+
+func (o *Ollama) Embeddings(request *olm.EmbeddingRequest) (*olm.EmbeddingResponse, error) {
+	log.Error().Any("request", request).Msg("Embeddings")
+	resp, err := o.newApiClient().Embeddings(app.ctx, request)
+	if err != nil {
+		log.Error().Err(err).Msg("embeddings error")
+	}
+	return resp, err
 }
 
 func (o *Ollama) SearchOnline(request *olm.SearchRequest) (*olm.SearchResponse, error) {

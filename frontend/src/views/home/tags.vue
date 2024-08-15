@@ -47,6 +47,10 @@ const ollamaStore = useOllamaStore()
 const list = ref([])
 
 function handleRefresh() {
+  if (!ollamaStore.started) {
+    ElMessage.warning('Ollama服务尚未启动')
+    return
+  }
   loading.value = true
   runQuietly(List, ({ models }) => {
     list.value = (models || []).map(item => {
@@ -62,6 +66,10 @@ function handleRefresh() {
 }
 
 function handleDelete(row) {
+  if (!ollamaStore.started) {
+    ElMessage.warning('Ollama服务尚未启动')
+    return
+  }
   loading.value = true
   runQuietly(() => deleteOllamaModel({ model: row.name }), handleRefresh, _ => ElMessage.error(`删除模型(${row.name})失败`), _ => { loading.value = false })
 }

@@ -45,10 +45,14 @@ func (a *App) onSecondInstanceLaunch(secondInstanceData options.SecondInstanceDa
 }
 
 func (a *App) AppInfo() map[string]string {
+	shortHash := config.BuildHash
+	if len(shortHash) > 7 {
+		shortHash = shortHash[0:7]
+	}
 	return map[string]string{
 		"Version":        config.BuildVersion,
 		"BuildHash":      config.BuildHash,
-		"BuildShortHash": config.BuildHash[0:7],
+		"BuildShortHash": shortHash,
 		"Platform":       runtime.GOOS,
 		"Arch":           runtime.GOARCH,
 	}

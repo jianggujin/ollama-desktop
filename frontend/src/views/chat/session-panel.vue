@@ -24,7 +24,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="delete" :icon="Delete">删除</el-dropdown-item>
-                <el-dropdown-item command="edit" :icon="Edit">编辑</el-dropdown-item>
+                <el-dropdown-item command="edit" :icon="Edit" :disabled="!ollamaStore.started">编辑</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -32,7 +32,7 @@
       </div>
     </el-scrollbar>
     <div style="display: flex;align-items: center;justify-content: center;margin: 10px 0;">
-      <el-button :icon="DocumentAdd" @click="showCreateSession">新建会话</el-button>
+      <el-button :icon="DocumentAdd" @click="showCreateSession" :disabled="!ollamaStore.started">新建会话</el-button>
     </div>
     <create-sesion-dialog ref="createSesionDialog" @create="handleCreated" @update="handleUpdated"/>
   </div>
@@ -45,10 +45,13 @@ import { ElMessage } from 'element-plus'
 import { Sessions, DeleteSession } from '@/go/app/Chat.js'
 import { runQuietly } from '~/utils/wrapper.js'
 import loadingOptions from '~/utils/loading.js'
+import { useOllamaStore } from '~/store/ollama.js'
 
 const emits = defineEmits(['change'])
 
 const loading = ref(false)
+
+const ollamaStore = useOllamaStore()
 
 const sessions = ref([])
 const sessionId = ref('')
@@ -61,7 +64,7 @@ function loadSessions() {
     sessions.value = data || []
     if (sessions.value.length) {
       sessionId.value = data.find(item => item.id === sessionId.value)?.id || data[0].id
-    } else {
+    } else if (ollamaStore.started) {
       showCreateSession()
     }
   }, _ => { ElMessage.error('获取会话列表失败') }, () => { loading.value = false })

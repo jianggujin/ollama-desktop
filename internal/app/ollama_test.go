@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/url"
@@ -40,6 +41,64 @@ func TestOllama_Show(t *testing.T) {
 	t.Log("ModelInfo", resp.ModelInfo)
 	t.Log("ProjectorInfo", resp.ProjectorInfo)
 	t.Log("ModifiedAt", resp.ModifiedAt)
+}
+
+func TestOllama_Chat(t *testing.T) {
+	stream := false
+	err := newApiClient().Chat(context.Background(), &olm.ChatRequest{
+		Model: "llama3.1",
+		Messages: []olm.Message{
+			{
+				Role:    "user",
+				Content: "What is the weather in Toronto?",
+			},
+		},
+		Stream:    &stream,
+		Format:    "",
+		KeepAlive: nil,
+		Tools: []olm.Tool{
+			{
+				Type: "function",
+				Function: olm.ToolFunction{
+					Name:        "",
+					Description: "",
+					Parameters: struct {
+						Type       string   `json:"type"`
+						Required   []string `json:"required"`
+						Properties map[string]struct {
+							Type        string   `json:"type"`
+							Description string   `json:"description"`
+							Enum        []string `json:"enum,omitempty"`
+						} `json:"properties"`
+					}{
+						Type:     "get_current_weather",
+						Required: []string{"city"},
+						Properties: map[string]struct {
+							Type        string   `json:"type"`
+							Description string   `json:"description"`
+							Enum        []string `json:"enum,omitempty"`
+						}{
+							"city": {
+								Type:        "string",
+								Description: "The name of the city",
+							},
+						},
+					},
+				},
+			},
+		},
+		Options: nil,
+	}, func(response olm.ChatResponse) error {
+		pretty, err := json.MarshalIndent(response, "", "  ")
+		if err != nil {
+			return nil
+		}
+		t.Log(string(pretty))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestOllama_ModelInfoOnline(t *testing.T) {

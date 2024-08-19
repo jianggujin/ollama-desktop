@@ -5,6 +5,8 @@ import {app} from '../models';
 
 export function Delete(arg1:ollama.DeleteRequest):Promise<void>;
 
+export function Embeddings(arg1:ollama.EmbeddingRequest):Promise<ollama.EmbeddingResponse>;
+
 export function Envs():Promise<Array<app.OllamaEnvVar>>;
 
 export function Heartbeat():Promise<void>;

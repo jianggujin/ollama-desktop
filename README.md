@@ -39,17 +39,61 @@ Ollama Desktop提供了丰富的功能，包括但不限于：
 
 ### 2.1. 1 环境信息
 
+<p>
+  <div align="center">
+    <img src="static/ollama.png" width="500">
+  </div>
+</p>
+
 ### 2.1.2 本地模型
+
+<p>
+  <div align="center">
+    <img src="static/local.png" width="500">
+  </div>
+</p>
 
 ### 2.1.3 在线模型
 
+<p>
+  <div align="center">
+    <img src="static/online01.png" width="500">
+    <img src="static/online02.png" width="500">
+  </div>
+</p>
+
 ## 2.2 聊天
+
+<p>
+  <div align="center">
+    <img src="static/chat01.png" width="500">
+    <img src="static/chat02.png" width="500">
+  </div>
+</p>
 
 ## 2.3 设置
 
+<p>
+  <div align="center">
+    <img src="static/config.png" width="500">
+  </div>
+</p>
+
 ## 2.4 关于
 
+<p>
+  <div align="center">
+    <img src="static/about.png" width="500">
+  </div>
+</p>
+
 ## 2.5 暗黑模式
+
+<p>
+  <div align="center">
+    <img src="static/dark.png" width="500">
+  </div>
+</p>
 
 # 三、帮忙点个⭐Star
 

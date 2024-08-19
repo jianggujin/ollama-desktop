@@ -271,6 +271,67 @@ export namespace ollama {
 	        this.name = source["name"];
 	    }
 	}
+	export class Duration {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new Duration(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
+	}
+	export class EmbeddingRequest {
+	    model: string;
+	    prompt: string;
+	    // Go type: Duration
+	    keep_alive?: any;
+	    options: {[key: string]: any};
+	
+	    static createFrom(source: any = {}) {
+	        return new EmbeddingRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model = source["model"];
+	        this.prompt = source["prompt"];
+	        this.keep_alive = this.convertValues(source["keep_alive"], null);
+	        this.options = source["options"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class EmbeddingResponse {
+	    embedding: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new EmbeddingResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.embedding = source["embedding"];
+	    }
+	}
 	export class LibraryRequest {
 	    q: string;
 	    sort: string;

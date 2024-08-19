@@ -6,6 +6,10 @@ export function Delete(arg1) {
   return window['go']['app']['Ollama']['Delete'](arg1);
 }
 
+export function Embeddings(arg1) {
+  return window['go']['app']['Ollama']['Embeddings'](arg1);
+}
+
 export function Envs() {
   return window['go']['app']['Ollama']['Envs']();
 }

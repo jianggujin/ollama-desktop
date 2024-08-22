@@ -29,7 +29,7 @@ func (e StatusError) Error() string {
 		return e.ErrorMessage
 	default:
 		// this should not happen
-		return "something went wrong, please see the ollama server logs for details"
+		return "something went wrong, please see the ollama desktop logs for details"
 	}
 }
 
@@ -159,18 +159,22 @@ type Tool struct {
 	Function ToolFunction `json:"function"`
 }
 
+type ToolFunctionParametersProperty struct {
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Enum        []string `json:"enum,omitempty"`
+}
+
+type ToolFunctionParameters struct {
+	Type       string                                    `json:"type"`
+	Required   []string                                  `json:"required"`
+	Properties map[string]ToolFunctionParametersProperty `json:"properties"`
+}
+
 type ToolFunction struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Parameters  struct {
-		Type       string   `json:"type"`
-		Required   []string `json:"required"`
-		Properties map[string]struct {
-			Type        string   `json:"type"`
-			Description string   `json:"description"`
-			Enum        []string `json:"enum,omitempty"`
-		} `json:"properties"`
-	} `json:"parameters"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  ToolFunctionParameters `json:"parameters"`
 }
 
 func (t *ToolFunction) String() string {

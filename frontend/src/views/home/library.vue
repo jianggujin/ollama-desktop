@@ -105,6 +105,8 @@ let prevOverflow = ''
 
 const router = useRouter()
 
+let modelTagCache
+
 let readmeContainer
 function handleReadmeClick(event) {
   if (event.target.tagName.toLowerCase() === 'a') {
@@ -122,7 +124,7 @@ function handleReadmeClick(event) {
 }
 
 watch(() => tag.value, newValue => {
-  if (newValue && (name.value + ':' + tag.value) !== props.modelTag) {
+  if (newValue && (name.value + ':' + tag.value) !== modelTagCache) {
     router.replace('/home/library/' + name.value + ':' + tag.value)
   }
 })
@@ -144,10 +146,13 @@ onMounted(() => {
   readmeContainer = document.getElementById('readme')
   readmeContainer.addEventListener('click', handleReadmeClick)
   loading.value = true
+  modelTagCache = props.modelTag
   runQuietly(() => ModelInfoOnline(props.modelTag), data => {
     modelInfo.value = data
     if (!tag.value) {
-      tag.value = data?.tags?.find(item => item.latest)?.name || ''
+      const tagValue = data?.tags?.find(item => item.latest)?.name || ''
+      modelTagCache = name.value + ':' + tagValue
+      tag.value = tagValue
     }
   }, _ => {
     ElMessage.error('获取模型信息失败')

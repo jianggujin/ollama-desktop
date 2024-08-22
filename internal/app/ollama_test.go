@@ -62,22 +62,10 @@ func TestOllama_Chat(t *testing.T) {
 				Function: olm.ToolFunction{
 					Name:        "",
 					Description: "",
-					Parameters: struct {
-						Type       string   `json:"type"`
-						Required   []string `json:"required"`
-						Properties map[string]struct {
-							Type        string   `json:"type"`
-							Description string   `json:"description"`
-							Enum        []string `json:"enum,omitempty"`
-						} `json:"properties"`
-					}{
+					Parameters: olm.ToolFunctionParameters{
 						Type:     "get_current_weather",
 						Required: []string{"city"},
-						Properties: map[string]struct {
-							Type        string   `json:"type"`
-							Description string   `json:"description"`
-							Enum        []string `json:"enum,omitempty"`
-						}{
+						Properties: map[string]olm.ToolFunctionParametersProperty{
 							"city": {
 								Type:        "string",
 								Description: "The name of the city",

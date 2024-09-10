@@ -44,7 +44,7 @@ func TestOllama_Show(t *testing.T) {
 }
 
 func TestOllama_Chat(t *testing.T) {
-	stream := false
+	stream := true
 	err := newApiClient().Chat(context.Background(), &olm.ChatRequest{
 		Model: "llama3.1",
 		Messages: []olm.Message{
